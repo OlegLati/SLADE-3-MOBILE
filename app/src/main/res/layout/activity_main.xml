@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+     xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:app="http://schemas.android.com/apk/res-auto"
+     xmlns:tools="http://schemas.android.com/tools"
+     android:layout_height="match_parent"
+     android:layout_width="match_parent"
+     tools:context=".MainActivity">
+
+    <Button
+         android:layout_height="wrap_content"
+         android:layout_width="wrap_content"
+         app:layout_constraintTop_toTopOf="parent"
+         app:layout_constraintStart_toStartOf="parent"
+         app:layout_constraintEnd_toEndOf="parent"
+         android:layout_marginTop="48dp"
+         android:id="@+id/btnOpenWad"
+         android:text="Open WAD file" />
+
+    <!-- Phase 7: Save As. Writes the edited session to a new file the
+         user picks via SAF; disabled while there's nothing open or
+         nothing to save (see MainActivity.setBusy()). -->
+    <Button
+         android:layout_height="wrap_content"
+         android:layout_width="wrap_content"
+         app:layout_constraintTop_toBottomOf="@id/btnOpenWad"
+         app:layout_constraintStart_toStartOf="parent"
+         app:layout_constraintEnd_toEndOf="parent"
+         android:layout_marginTop="8dp"
+         android:id="@+id/btnSaveAs"
+         android:enabled="false"
+         android:text="Save As…" />
+
+    <!-- Add Entry: appends a brand-new entry read whole from a picked file
+         (see MainActivity.addEntryLauncher/showAddEntryNameDialog).
+         Gated on archiveOpen same as Save As: an empty-but-open archive
+         is a fine target to add to, but with no archive open at all
+         there's nothing for wad->addEntry() to add to. -->
+    <Button
+         android:layout_height="wrap_content"
+         android:layout_width="wrap_content"
+         app:layout_constraintTop_toBottomOf="@id/btnSaveAs"
+         app:layout_constraintStart_toStartOf="parent"
+         app:layout_constraintEnd_toEndOf="parent"
+         android:layout_marginTop="8dp"
+         android:id="@+id/btnAddEntry"
+         android:enabled="false"
+         android:text="Add Entry…" />
+
+    <!-- Phase 8 (Safe Save): overwrites the SAME file the WAD was opened
+         from, unlike Save As (always a new file). See MainActivity's
+         saveInPlace() — validated entirely in memory on the native side
+         BEFORE the original document is ever opened for writing, since
+         opening it in "rwt" mode truncates it immediately regardless of
+         when bytes actually get written. Enabled only when there's
+         something to save (archiveOpen && dirty) — see setBusy(); a
+         freshly-opened, unedited WAD has nothing this needs to do.
+         Side-by-side with Discard as one row rather than two more
+         full-width buttons, since the screen already had three. -->
+    <Button
+         android:layout_height="wrap_content"
+         android:layout_width="0dp"
+         app:layout_constraintTop_toBottomOf="@id/btnAddEntry"
+         app:layout_constraintBottom_toBottomOf="@id/btnDiscard"
+         app:layout_constraintStart_toStartOf="parent"
+         app:layout_constraintEnd_toStartOf="@id/btnDiscard"
+         android:layout_marginTop="8dp"
+         android:layout_marginEnd="4dp"
+         android:id="@+id/btnSave"
+         android:enabled="false"
+         android:text="Save" />
+
+    <!-- Phase 8: Discard Changes. Re-parses the session's WadArchive from
+         its own untouched original MemChunk (see ArchiveSession::
+         discardChanges() — rename/delete/add/replace never mutate that
+         buffer, only the entry list/entries themselves, so it's still
+         byte-for-byte the file as opened) — distinct from just opening a
+         different WAD, since the archive stays open and its file identity
+         is unchanged, only the edits are thrown away. Same enabled
+         condition as Save (archiveOpen && dirty): nothing to discard
+         otherwise. -->
+    <Button
+         android:layout_height="wrap_content"
+         android:layout_width="0dp"
+         app:layout_constraintTop_toTopOf="@id/btnSave"
+         app:layout_constraintStart_toEndOf="@id/btnSave"
+         app:layout_constraintEnd_toEndOf="parent"
+         android:layout_marginStart="4dp"
+         android:id="@+id/btnDiscard"
+         android:enabled="false"
+         android:text="Discard Changes" />
+
+    <TextView
+         android:layout_height="wrap_content"
+         android:layout_width="match_parent"
+         android:textSize="16sp"
+         android:paddingStart="16dp"
+         android:layout_marginTop="16dp"
+         app:layout_constraintTop_toBottomOf="@id/btnSave"
+         android:textIsSelectable="true"
+         android:paddingEnd="16dp"
+         app:layout_constraintStart_toStartOf="parent"
+         android:fontFamily="monospace"
+         app:layout_constraintEnd_toEndOf="parent"
+         android:id="@+id/fileNameText"
+         android:textStyle="bold" />
+
+    <TextView
+         android:layout_height="wrap_content"
+         android:layout_width="match_parent"
+         android:paddingEnd="16dp"
+         app:layout_constraintStart_toStartOf="parent"
+         android:fontFamily="monospace"
+         app:layout_constraintEnd_toEndOf="parent"
+         android:paddingStart="16dp"
+         android:layout_marginTop="4dp"
+         app:layout_constraintTop_toBottomOf="@id/fileNameText"
+         android:textIsSelectable="true"
+         android:id="@+id/statusText" />
+
+    <androidx.recyclerview.widget.RecyclerView
+         android:layout_height="0dp"
+         android:layout_width="match_parent"
+         app:layout_constraintStart_toStartOf="parent"
+         tools:listitem="@layout/item_wad_entry"
+         app:layout_constraintEnd_toEndOf="parent"
+         android:layout_marginTop="8dp"
+         app:layout_constraintBottom_toBottomOf="parent"
+         app:layout_constraintTop_toBottomOf="@id/statusText"
+         android:id="@+id/entryList" />
+
+    <!-- Phase 5: indeterminate only. Native open/parse/decode calls run
+         as one opaque blocking JNI call each with no incremental progress
+         callback from C++, so a determinate percentage isn't available yet
+         (would need native-side changes to report progress mid-call). This
+         at least replaces "UI silently freezes" with "UI visibly says
+         it's working" for both WAD open and entry preview decode. -->
+    <ProgressBar
+         android:layout_height="wrap_content"
+         android:layout_width="wrap_content"
+         android:id="@+id/progressBar"
+         android:visibility="gone"
+         app:layout_constraintTop_toTopOf="parent"
+         app:layout_constraintBottom_toBottomOf="parent"
+         app:layout_constraintStart_toStartOf="parent"
+         app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

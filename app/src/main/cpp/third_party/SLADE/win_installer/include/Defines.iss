@@ -1,0 +1,5 @@
+#define MyAppName "SLADE"
+#define MyAppVersion "3.2.12"
+#define MyAppURL "https://slade.mancubus.net"
+#define MyAppExeName "SLADE.exe"
+#define MyAppPublisher "sirjuddington"

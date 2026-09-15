@@ -1,0 +1,277 @@
+ .gitignore                       |    28 [32m+[m
+ THIRD_PARTY_NOTICES.md           |   106 [32m+[m
+ app/build.gradle                 |    60 [32m+[m
+ app/proguard-rules.pro           |    21 [32m+[m
+ app/src/main/AndroidManifest.xml |    22 [32m+[m
+ app/src/main/cpp/CMakeLists.txt  |    92 [32m+[m
+ .../cpp/compat/android_compat.h  |   789 [32m+[m
+ app/src/main/cpp/compat/common.h |    49 [32m+[m
+ .../main/cpp/compat/common2.h    |     9 [32m+[m
+ .../cpp/compat/slade_shims.cpp   |   793 [32m+[m
+ app/src/main/cpp/native-lib.cpp  |  1729 [32m+[m
+ .../SLADE/.editorconfig          |    17 [32m+[m
+ .../SLADE/.gitattributes         |    69 [32m+[m
+ .../.github/CONTRIBUTING.md      |    15 [32m+[m
+ .../SLADE/.github/FUNDING.yml    |     8 [32m+[m
+ .../ISSUE_TEMPLATE/bug.yml       |    70 [32m+[m
+ .../ISSUE_TEMPLATE/config.yml    |     1 [32m+[m
+ .../ISSUE_TEMPLATE/crash.yml     |    67 [32m+[m
+ .../feature-request.yml          |    40 [32m+[m
+ .../ISSUE_TEMPLATE/other.yml     |    29 [32m+[m
+ .../workflows/ci_linux.yml       |   120 [32m+[m
+ .../workflows/ci_macos.yml       |    75 [32m+[m
+ .../third_party/SLADE/.gitignore |    48 [32m+[m
+ .../SLADE/.readthedocs.yml       |    29 [32m+[m
+ .../SLADE/.sonarcloud.properties |    15 [32m+[m
+ .../SLADE/CMakeLists.txt         |    53 [32m+[m
+ .../SLADE/CMakePresets.json      |     4 [32m+[m
+ .../third_party/SLADE/COMPILE.md |    44 [32m+[m
+ .../third_party/SLADE/Info.plist |   179 [32m+[m
+ .../third_party/SLADE/LICENSE    |   280 [32m+[m
+ .../third_party/SLADE/README.md  |    41 [32m+[m
+ .../SLADE/SLADE-osx.icns         |   Bin [31m0[m -> [32m55754[m bytes
+ .../cmake_uninstall.cmake.in     |    21 [32m+[m
+ .../find_modules/FindFTGL.cmake  |    22 [32m+[m
+ .../FindFluidSynth.cmake         |    23 [32m+[m
+ .../FindMPG123.cmake             |    28 [32m+[m
+ .../cmake/presets_windows.json   |    70 [32m+[m
+ .../SLADE/cmake/unix.cmake       |   233 [32m+[m
+ .../SLADE/cmake/win_msvc.cmake   |   141 [32m+[m
+ .../SLADE/dist/CMakeLists.txt    |    32 [32m+[m
+ .../SLADE/dist/res/actions.cfg   |    22 [32m+[m
+ .../dist/res/actions/aelt.cfg    |    49 [32m+[m
+ .../dist/res/actions/aman.cfg    |   139 [32m+[m
+ .../dist/res/actions/anim.cfg    |    28 [32m+[m
+ .../dist/res/actions/arch.cfg    |   485 [32m+[m
+ .../dist/res/actions/data.cfg    |    45 [32m+[m
+ .../dist/res/actions/main.cfg    |    98 [32m+[m
+ .../dist/res/actions/mapw.cfg    |     6 [32m+[m
+ .../res/actions/mapw_general.cfg |   328 [32m+[m
+ .../res/actions/mapw_line.cfg    |    34 [32m+[m
+ .../res/actions/mapw_script.cfg  |    30 [32m+[m
+ .../res/actions/mapw_sector.cfg  |    33 [32m+[m
+ .../res/actions/mapw_show.cfg    |    53 [32m+[m
+ .../dist/res/actions/pgfx.cfg    |   113 [32m+[m
+ .../res/actions/pgfx_brush.cfg   |   162 [32m+[m
+ .../dist/res/actions/ppal.cfg    |   119 [32m+[m
+ .../dist/res/actions/ptxt.cfg    |    57 [32m+[m
+ .../dist/res/actions/scrm.cfg    |   108 [32m+[m
+ .../dist/res/actions/swch.cfg    |    28 [32m+[m
+ .../dist/res/actions/txed.cfg    |   197 [32m+[m
+ .../SLADE/dist/res/animated.lmp  |   Bin [31m0[m -> [32m1450[m bytes
+ .../config/archive_formats.cfg   |   264 [32m+[m
+ .../res/config/colours/Clean.txt |   287 [32m+[m
+ .../config/colours/Dark Grey.txt |   201 [32m+[m
+ .../config/colours/Default.txt   |   316 [32m+[m
+ .../colours/Doom Builder 2.txt   |   243 [32m+[m
+ .../config/colours/SLADE 2.cfg   |   315 [32m+[m
+ .../res/config/entry_types.cfg   |    14 [32m+[m
+ .../entry_types/archives.cfg     |   221 [32m+[m
+ .../config/entry_types/audio.cfg |   503 [32m+[m
+ .../config/entry_types/fonts.cfg |    99 [32m+[m
+ .../entry_types/gfx_doom.cfg     |   227 [32m+[m
+ .../entry_types/gfx_other.cfg    |   305 [32m+[m
+ .../entry_types/gfx_std.cfg      |   101 [32m+[m
+ .../config/entry_types/map.cfg   |   303 [32m+[m
+ .../config/entry_types/misc.cfg  |   211 [32m+[m
+ .../config/entry_types/model.cfg |    66 [32m+[m
+ .../config/entry_types/text.cfg  |   752 [32m+[m
+ .../res/config/executables.cfg   |   195 [32m+[m
+ .../res/config/games/chex1.cfg   |    87 [32m+[m
+ .../res/config/games/chex3.cfg   |   109 [32m+[m
+ .../res/config/games/doom1.cfg   |   124 [32m+[m
+ .../res/config/games/doom2.cfg   |   119 [32m+[m
+ .../res/config/games/doom64.cfg  |   122 [32m+[m
+ .../res/config/games/heretic.cfg |   138 [32m+[m
+ .../res/config/games/hexen.cfg   |   242 [32m+[m
+ .../games/include/flags_doom.cfg |    90 [32m+[m
+ .../include/flags_doom64.cfg     |    75 [32m+[m
+ .../include/flags_hexen.cfg      |   172 [32m+[m
+ .../include/flags_strife.cfg     |   134 [32m+[m
+ .../games/include/props_base.cfg |   253 [32m+[m
+ .../include/props_hexen.cfg      |    72 [32m+[m
+ .../include/sectors_doom.cfg     |    22 [32m+[m
+ .../include/sectors_doom64.cfg   |    21 [32m+[m
+ .../include/sectors_heretic.cfg  |    53 [32m+[m
+ .../include/sectors_hexen.cfg    |    52 [32m+[m
+ .../include/sectors_strife.cfg   |    24 [32m+[m
+ .../include/specials_doom1.cfg   |   187 [32m+[m
+ .../include/specials_doom2.cfg   |   104 [32m+[m
+ .../include/specials_doom64.cfg  |   203 [32m+[m
+ .../include/specials_heretic.cfg |   192 [32m+[m
+ .../include/specials_hexen.cfg   |   676 [32m+[m
+ .../include/specials_strife.cfg  |   334 [32m+[m
+ .../include/things_action2.cfg   |  1540 [32m+[m
+ .../include/things_chex1.cfg     |   362 [32m+[m
+ .../include/things_chex3.cfg     |   469 [32m+[m
+ .../include/things_common.cfg    |    20 [32m+[m
+ .../include/things_doom1.cfg     |   452 [32m+[m
+ .../include/things_doom2.cfg     |   180 [32m+[m
+ .../include/things_doom64.cfg    |   521 [32m+[m
+ .../include/things_heretic.cfg   |   498 [32m+[m
+ .../include/things_hexen.cfg     |  1314 [32m+[m
+ .../include/things_strife.cfg    |   444 [32m+[m
+ .../res/config/games/srb2.cfg    |  1388 [32m+[m
+ .../res/config/games/strife.cfg  |   115 [32m+[m
+ .../config/games/urbanbrawl.cfg  |   109 [32m+[m
+ .../dist/res/config/iwads.cfg    |    92 [32m+[m
+ .../config/languages/0_base.txt  |    65 [32m+[m
+ .../res/config/languages/acs.txt |  1066 [32m+[m
+ .../languages/decohack.txt       |   337 [32m+[m
+ .../languages/decorate.txt       |  1229 [32m+[m
+ .../languages/dehacked.txt       |    74 [32m+[m
+ .../res/config/languages/edf.txt |   462 [32m+[m
+ .../languages/fragglescript.txt  |   216 [32m+[m
+ .../config/languages/hexen.txt   |     9 [32m+[m
+ .../config/languages/kssc.txt    |    22 [32m+[m
+ .../languages/sladescript.txt    |   357 [32m+[m
+ .../config/languages/srb2lua.txt |  1604 [32m+[m
+ .../languages/umapinfo.txt       |    36 [32m+[m
+ .../config/languages/usdf.txt    |    32 [32m+[m
+ .../config/languages/zdaemon.txt |    87 [32m+[m
+ .../config/languages/zdoom.txt   |   850 [32m+[m
+ .../config/languages/zscript.txt |   379 [32m+[m
+ .../res/config/nodebuilders.cfg  |    63 [32m+[m
+ .../res/config/ports/boom.cfg    |    32 [32m+[m
+ .../config/ports/boom_mbf.cfg    |    34 [32m+[m
+ .../config/ports/boom_mbf21.cfg  |    39 [32m+[m
+ .../ports/edge_classic.cfg       |    84 [32m+[m
+ .../config/ports/eternity.cfg    |    79 [32m+[m
+ .../res/config/ports/her+hex.cfg |    22 [32m+[m
+ .../ports/include/flags_boom.cfg |   110 [32m+[m
+ .../flags_edge_classic.cfg       |   125 [32m+[m
+ .../include/flags_eternity.cfg   |   126 [32m+[m
+ .../ports/include/flags_mbf.cfg  |   116 [32m+[m
+ .../include/flags_mbf21.cfg      |    15 [32m+[m
+ .../include/flags_zdoom.cfg      |   392 [32m+[m
+ .../include/presets_zdoom.cfg    |  5616 [32m++[m
+ .../ports/include/props_boom.cfg |    18 [32m+[m
+ .../props_edge_classic.cfg       |   189 [32m+[m
+ .../include/props_eternity.cfg   |   635 [32m+[m
+ .../include/props_zdoom.cfg      |  1093 [32m+[m
+ .../sectors_edge_classic.cfg     |   192 [32m+[m
+ .../include/sectors_eternity.cfg |   105 [32m+[m
+ .../include/sectors_zdoom.cfg    |   127 [32m+[m
+ .../include/specials_boom.cfg    |   274 [32m+[m
+ .../specials_edge_classic.cfg    |   277 [32m+[m
+ .../specials_eternity.cfg        |  2946 [32m+[m
+ .../include/specials_mbf.cfg     |    14 [32m+[m
+ .../include/specials_mbf21.cfg   |    18 [32m+[m
+ .../include/specials_zdoom.cfg   |  2601 [32m+[m
+ .../include/things_boom.cfg      |    25 [32m+[m
+ .../include/things_eternity.cfg  |   924 [32m+[m
+ .../include/things_her+hex.cfg   |   197 [32m+[m
+ .../ports/include/things_mbf.cfg |    17 [32m+[m
+ .../include/things_zdoom.cfg     |  1180 [32m+[m
+ .../res/config/ports/zdoom.cfg   |    94 [32m+[m
+ .../0default_dark.sss            |   134 [32m+[m
+ .../text_styles/default.sss      |   134 [32m+[m
+ .../config/text_styles/faded.sss |   107 [32m+[m
+ .../text_styles/gzdb_dark.sss    |   105 [32m+[m
+ .../text_styles/gzdb_light.sss   |   105 [32m+[m
+ .../text_styles/material.sss     |   110 [32m+[m
+ .../text_styles/old_dark.sss     |    96 [32m+[m
+ .../text_styles/old_default.sss  |    94 [32m+[m
+ .../text_styles/vs_dark.sss      |   107 [32m+[m
+ .../text_styles/vs_light.sss     |   101 [32m+[m
+ .../res/fonts/FiraSans-Bold.woff |   Bin [31m0[m -> [32m198080[m bytes
+ .../fonts/FiraSans-Heavy.woff    |   Bin [31m0[m -> [32m200676[m bytes
+ .../fonts/FiraSans-Italic.woff   |   Bin [31m0[m -> [32m192184[m bytes
+ .../fonts/FiraSans-Medium.woff   |   Bin [31m0[m -> [32m186824[m bytes
+ .../fonts/FiraSans-Regular.woff  |   Bin [31m0[m -> [32m183268[m bytes
+ .../res/fonts/dejavu_mono.ttf    |   Bin [31m0[m -> [32m333636[m bytes
+ .../res/fonts/dejavu_sans.ttf    |   Bin [31m0[m -> [32m720012[m bytes
+ .../res/fonts/dejavu_sans_b.ttf  |   Bin [31m0[m -> [32m672300[m bytes
+ .../res/fonts/dejavu_sans_c.ttf  |   Bin [31m0[m -> [32m643852[m bytes
+ .../res/fonts/dejavu_sans_cb.ttf |   Bin [31m0[m -> [32m631992[m bytes
+ .../SLADE/dist/res/html/base.css |   582 [32m+[m
+ .../res/html/box-title-back.png  |   Bin [31m0[m -> [32m1365[m bytes
+ .../dist/res/html/startpage.htm  |   249 [32m+[m
+ .../res/html/startpage_basic.htm |   124 [32m+[m
+ .../res/html/startpage_old.htm   |   210 [32m+[m
+ .../dist/res/html/theme-dark.css |   273 [32m+[m
+ .../res/html/theme-light.css     |   283 [32m+[m
+ .../SLADE/dist/res/icons.cfg     |  1332 [32m+[m
+ .../Rounded/16/animated.png      |   Bin [31m0[m -> [32m414[m bytes
+ .../Rounded/16/archive.png       |   Bin [31m0[m -> [32m407[m bytes
+ .../Rounded/16/bmp.png           |   Bin [31m0[m -> [32m498[m bytes
+ .../Rounded/16/colormap.png      |   Bin [31m0[m -> [32m562[m bytes
+ .../Rounded/16/data.png          |   Bin [31m0[m -> [32m368[m bytes
+ .../Rounded/16/default.png       |   Bin [31m0[m -> [32m354[m bytes
+ .../Rounded/16/folder.png        |   Bin [31m0[m -> [32m302[m bytes
+ .../Rounded/16/font.png          |   Bin [31m0[m -> [32m471[m bytes
+ .../Rounded/16/gfx.png           |   Bin [31m0[m -> [32m510[m bytes
+ .../Rounded/16/lua.png           |   Bin [31m0[m -> [32m273[m bytes
+ .../Rounded/16/map.png           |   Bin [31m0[m -> [32m501[m bytes
+ .../Rounded/16/map_data.png      |   Bin [31m0[m -> [32m380[m bytes
+ .../Rounded/16/marker.png        |   Bin [31m0[m -> [32m269[m bytes
+ .../Rounded/16/music.png         |   Bin [31m0[m -> [32m541[m bytes
+ .../Rounded/16/palette.png       |   Bin [31m0[m -> [32m419[m bytes
+ .../Rounded/16/pnames.png        |   Bin [31m0[m -> [32m455[m bytes
+ .../Rounded/16/png.png           |   Bin [31m0[m -> [32m476[m bytes
+ .../Rounded/16/sound.png         |   Bin [31m0[m -> [32m535[m bytes
+ .../Rounded/16/switches.png      |   Bin [31m0[m -> [32m474[m bytes
+ .../Rounded/16/text.png          |   Bin [31m0[m -> [32m312[m bytes
+ .../Rounded/16/texturex.png      |   Bin [31m0[m -> [32m445[m bytes
+ .../Rounded/16/unknown.png       |   Bin [31m0[m -> [32m428[m bytes
+ .../Rounded/16/wad.png           |   Bin [31m0[m -> [32m465[m bytes
+ .../Rounded/16/zip.png           |   Bin [31m0[m -> [32m469[m bytes
+ .../Rounded/32/animated.png      |   Bin [31m0[m -> [32m699[m bytes
+ .../Rounded/32/archive.png       |   Bin [31m0[m -> [32m660[m bytes
+ .../Rounded/32/bmp.png           |   Bin [31m0[m -> [32m956[m bytes
+ .../Rounded/32/colormap.png      |   Bin [31m0[m -> [32m919[m bytes
+ .../Rounded/32/data.png          |   Bin [31m0[m -> [32m779[m bytes
+ .../Rounded/32/default.png       |   Bin [31m0[m -> [32m587[m bytes
+ .../Rounded/32/folder.png        |   Bin [31m0[m -> [32m463[m bytes
+ .../Rounded/32/font.png          |   Bin [31m0[m -> [32m839[m bytes
+ .../Rounded/32/gfx.png           |   Bin [31m0[m -> [32m988[m bytes
+ .../Rounded/32/lua.png           |   Bin [31m0[m -> [32m437[m bytes
+ .../Rounded/32/map.png           |   Bin [31m0[m -> [32m920[m bytes
+ .../Rounded/32/map_data.png      |   Bin [31m0[m -> [32m645[m bytes
+ .../Rounded/32/marker.png        |   Bin [31m0[m -> [32m416[m bytes
+ .../Rounded/32/music.png         |   Bin [31m0[m -> [32m1093[m bytes
+ .../Rounded/32/palette.png       |   Bin [31m0[m -> [32m731[m bytes
+ .../Rounded/32/pnames.png        |   Bin [31m0[m -> [32m790[m bytes
+ .../Rounded/32/png.png           |   Bin [31m0[m -> [32m882[m bytes
+ .../Rounded/32/sound.png         |   Bin [31m0[m -> [32m1208[m bytes
+ .../Rounded/32/switches.png      |   Bin [31m0[m -> [32m824[m bytes
+ .../Rounded/32/text.png          |   Bin [31m0[m -> [32m545[m bytes
+ .../Rounded/32/texturex.png      |   Bin [31m0[m -> [32m816[m bytes
+ .../Rounded/32/unknown.png       |   Bin [31m0[m -> [32m811[m bytes
+ .../Rounded/32/wad.png           |   Bin [31m0[m -> [32m863[m bytes
+ .../Rounded/32/zip.png           |   Bin [31m0[m -> [32m740[m bytes
+ .../entry_list/animated.svg      |    32 [32m+[m
+ .../icons/entry_list/archive.svg |    19 [32m+[m
+ .../res/icons/entry_list/bmp.svg |    23 [32m+[m
+ .../classic/16/animated.png      |   Bin [31m0[m -> [32m242[m bytes
+ .../classic/16/archive.png       |   Bin [31m0[m -> [32m300[m bytes
+ .../classic/16/bmp.png           |   Bin [31m0[m -> [32m276[m bytes
+ .../classic/16/code.png          |   Bin [31m0[m -> [32m279[m bytes
+ .../classic/16/colormap.png      |   Bin [31m0[m -> [32m579[m bytes
+ .../classic/16/data.png          |   Bin [31m0[m -> [32m278[m bytes
+ .../classic/16/default.png       |   Bin [31m0[m -> [32m277[m bytes
+ .../classic/16/fademask.png      |   Bin [31m0[m -> [32m259[m bytes
+ .../classic/16/folder.png        |   Bin [31m0[m -> [32m265[m bytes
+ .../classic/16/font.png          |   Bin [31m0[m -> [32m263[m bytes
+ .../classic/16/gfx.png           |   Bin [31m0[m -> [32m289[m bytes
+ .../classic/16/lua.png           |   Bin [31m0[m -> [32m311[m bytes
+ .../classic/16/map.png           |   Bin [31m0[m -> [32m332[m bytes
+ .../classic/16/map_data.png      |   Bin [31m0[m -> [32m317[m bytes
+ .../classic/16/marker.png        |   Bin [31m0[m -> [32m283[m bytes
+ .../classic/16/music.png         |   Bin [31m0[m -> [32m311[m bytes
+ .../classic/16/palette.png       |   Bin [31m0[m -> [32m380[m bytes
+ .../classic/16/pnames.png        |   Bin [31m0[m -> [32m291[m bytes
+ .../classic/16/png.png           |   Bin [31m0[m -> [32m265[m bytes
+ .../classic/16/sound.png         |   Bin [31m0[m -> [32m300[m bytes
+ .../classic/16/switches.png      |   Bin [31m0[m -> [32m279[m bytes
+ .../classic/16/text.png          |   Bin [31m0[m -> [32m279[m bytes
+ .../classic/16/texturex.png      |   Bin [31m0[m -> [32m297[m bytes
+ .../classic/16/unknown.png       |   Bin [31m0[m -> [32m315[m bytes
+ .../classic/16/upfolder.png      |   Bin [31m0[m -> [32m347[m bytes
+ .../classic/16/wad.png           |   Bin [31m0[m -> [32m307[m bytes
+ .../classic/16/zip.png           |   Bin [31m0[m -> [32m306[m bytes
+ .../classic/32/animated.png      |   Bin [31m0[m -> [32m462[m bytes
+ .../classic/32/archive.png       |   Bin [31m0[m -> [32m718[m bytes
+ .../classic/32/bmp.png           |   Bin [31m0[m -> [32m592[m bytes
+ .../classic/32/code.png          |   Bin [31m0[m -> [32m494[m bytes
+ .../classic/32/colormap.png      |   Bin [31m0[m -> [32m144
