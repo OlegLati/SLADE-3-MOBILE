@@ -1,76 +1,76 @@
 # SLADE 3 MOBILE
 
-SLADE 3 MOBILE is an Android port/integration of the [SLADE](https://github.com/sirjuddington/SLADE) editor, focused on bringing WAD editing and related Doom-engine resource workflows to Android devices.
+SLADE 3 MOBILE — это портирование/интеграция редактора [SLADE](https://github.com/sirjuddington/SLADE) для Android, направленное на то, чтобы принести редактирование WAD-файлов и связанные с ними рабочие процессы для ресурсов на движке Doom на устройства Android.
 
-The project is developed directly on Android, with AndroidIDE as the primary development environment. The goal is to make practical SLADE functionality available without requiring a desktop PC.
+Проект разрабатывается непосредственно на Android, с использованием AndroidIDE в качестве основной среды разработки. Цель — сделать практический функционал SLADE доступным без необходимости использования настольного ПК.
 
-> **Project status:** WAD Editor MVP / active development  
-> **Current baseline:** `v0.1.0`
+> **Статус проекта:** MVP WAD-редактора / активная разработка  
+> **Текущая базовая версия:** `v0.1.0`
 
-## Features
+## Возможности
 
-The current MVP includes:
+Текущий MVP включает:
 
-- WAD archive opening and browsing
-- WAD entry listing
-- Entry selection and basic entry operations
-- Preview support for supported resource types
-- WAD editing
-- Save
-- Save As
-- Android Storage Access Framework (SAF) integration
-- Native C++ integration with the SLADE codebase
-- Android-specific compatibility/shim layer
+- Открытие и просмотр WAD-архивов
+- Список записей WAD
+- Выбор записей и базовые операции над ними
+- Предпросмотр для поддерживаемых типов ресурсов
+- Редактирование WAD
+- Сохранение
+- Сохранение как
+- Интеграция с Android Storage Access Framework (SAF)
+- Нативная интеграция на C++ с кодовой базой SLADE
+- Слой совместимости, специфичный для Android
 
-The project is currently **WAD-first**. Broader archive support such as PK3/ZIP is planned for a later stage.
+В настоящее время проект ориентирован в первую очередь на **WAD**. Более широкая поддержка архивов, например PK3/ZIP, запланирована на более поздний этап.
 
-## Why this project exists
+## Зачем нужен этот проект
 
-SLADE is a powerful editor for Doom-engine and related game resources, but its traditional desktop workflow assumes access to a PC.
+SLADE — мощный редактор ресурсов для игр на движке Doom и связанных с ним игр, но его традиционный рабочий процесс на ПК предполагает наличие настольного компьютера.
 
-SLADE 3 MOBILE exists to explore what can be done when that workflow is brought to Android.
+SLADE 3 MOBILE существует, чтобы исследовать возможности переноса этого рабочего процесса на Android.
 
-The project is not intended to replace the desktop version immediately. Instead, it aims to provide a useful mobile editor while gradually building a maintainable Android-native architecture around the proven SLADE codebase.
+Проект не ставит целью немедленно заменить настольную версию. Вместо этого он стремится предоставить полезный мобильный редактор, постепенно выстраивая поддерживаемую нативную архитектуру для Android вокруг проверенной кодовой базы SLADE.
 
-## Project Status
+## Статус проекта
 
-### Completed
+### Завершено
 
-- Initial Android project and native integration
-- WAD archive editor MVP
-- WAD entry browsing and operations
-- Resource previews
-- Android SAF-based file access
-- Safe Save / Save As pipeline
-- Initial third-party license audit
-- Git repository and GitHub integration
-- `v0.1.0` WAD Editor MVP baseline
+- Начальная настройка Android-проекта и нативной интеграции
+- MVP редактора WAD-архивов
+- Просмотр записей WAD и операции над ними
+- Предпросмотр ресурсов
+- Доступ к файлам на основе Android SAF
+- Безопасный конвейер сохранения / сохранения как
+- Первичный аудит лицензий сторонних компонентов
+- Git-репозиторий и интеграция с GitHub
+- Базовая версия `v0.1.0` MVP WAD-редактора
 
-### In progress
+### В процессе
 
-- Architectural refactoring
-- Separation of Android UI, application state, repository logic and native archive operations
-- Cleaner JNI boundary
-- Stronger native archive/session abstractions
-- Typed Kotlin/native data contracts
-- Undo/Redo
-- Native automated tests
+- Рефакторинг архитектуры
+- Разделение UI Android, состояния приложения, логики репозитория и нативных операций с архивами
+- Более чистая граница JNI
+- Более надёжные нативные абстракции для архивов/сессий
+- Типизированные контракты данных Kotlin/native
+- Отмена/повтор действий (Undo/Redo)
+- Нативные автоматизированные тесты
 
-### Planned
+### Запланировано
 
-- Improved performance and memory handling
-- More resource editors
-- PK3/ZIP support
-- Broader archive abstraction
-- More complete mobile-oriented workflows
+- Улучшение производительности и работы с памятью
+- Больше редакторов ресурсов
+- Поддержка PK3/ZIP
+- Более широкая абстракция архивов
+- Более полные рабочие процессы, ориентированные на мобильные устройства
 
-See [`documents/ROADMAP.md`](documents/ROADMAP.md) for the detailed roadmap.
+Подробную дорожную карту см. в [`documents/ROADMAP.md`](documents/ROADMAP.md).
 
-## Architecture
+## Архитектура
 
-The project currently combines Kotlin/Android code with the C++ SLADE core.
+В настоящее время проект сочетает код на Kotlin/Android с ядром SLADE на C++.
 
-The intended architecture is gradually moving toward:
+Предполагаемая архитектура постепенно движется к следующему виду:
 
 ```text
 Android UI
@@ -97,24 +97,24 @@ Native Archive Layer
 SLADE Core
 ```
 
-The architecture is deliberately being refactored incrementally rather than rewriting the existing SLADE integration from scratch.
+Архитектура намеренно рефакторится постепенно, а не переписывается с нуля вместе с существующей интеграцией SLADE.
 
-## Technology Stack
+## Технологический стек
 
-- **Platform:** Android
-- **Minimum Android API:** 24
-- **Target Android API:** 34
+- **Платформа:** Android
+- **Минимальный Android API:** 24
+- **Целевой Android API:** 34
 - **Compile SDK:** 36
 - **ABI:** `arm64-v8a`
-- **Language:** Kotlin + C++20
-- **Native build:** CMake
-- **Build system:** Gradle / Android Gradle Plugin
-- **Native code:** SLADE + Android compatibility layer
-- **Storage:** Android Storage Access Framework (SAF)
+- **Язык:** Kotlin + C++20
+- **Нативная сборка:** CMake
+- **Система сборки:** Gradle / Android Gradle Plugin
+- **Нативный код:** SLADE + слой совместимости с Android
+- **Хранилище:** Android Storage Access Framework (SAF)
 
-The project is primarily developed using **AndroidIDE**.
+Проект в основном разрабатывается с использованием **AndroidIDE**.
 
-## Repository Structure
+## Структура репозитория
 
 ```text
 SLADE_3_MOBILE/
@@ -140,41 +140,41 @@ SLADE_3_MOBILE/
 └── settings.gradle
 ```
 
-### Third-party code
+### Сторонний код
 
-The repository contains the SLADE source tree and several third-party libraries.
+Репозиторий содержит исходный код SLADE и несколько сторонних библиотек.
 
-Important license files are intentionally kept with their respective source trees.
+Важные файлы лицензий намеренно хранятся вместе с соответствующими исходными деревьями.
 
-See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for the third-party license inventory.
+Список сторонних лицензий см. в [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
-## Building
+## Сборка
 
-The project is intended to be buildable directly on Android using AndroidIDE.
+Проект предназначен для сборки непосредственно на Android с использованием AndroidIDE.
 
-The exact local SDK/NDK/CMake versions are documented in [`documents/TECHNICAL.md`](documents/TECHNICAL.md).
+Точные локальные версии SDK/NDK/CMake описаны в [`documents/TECHNICAL.md`](documents/TECHNICAL.md).
 
-A typical development workflow is:
+Типичный рабочий процесс разработки:
 
 ```text
-Open project in AndroidIDE
+Открыть проект в AndroidIDE
         ↓
-Sync Gradle
+Синхронизировать Gradle
         ↓
-Build
+Собрать
         ↓
-Install APK
+Установить APK
         ↓
-Test on Android device
+Протестировать на Android-устройстве
 ```
 
-Desktop build instructions may be added later if the development workflow expands to additional platforms.
+Инструкции по сборке для настольных систем могут быть добавлены позже, если процесс разработки расширится на другие платформы.
 
-## Development Workflow
+## Процесс разработки
 
-Git is used to keep the project recoverable while the architecture is being refactored.
+Git используется для сохранения возможности восстановления проекта в процессе рефакторинга архитектуры.
 
-The stable baseline is:
+Стабильная базовая версия:
 
 ```text
 master
@@ -182,55 +182,55 @@ master
     └── WAD Editor MVP
 ```
 
-Development work is performed in feature/refactoring branches rather than directly on the stable baseline.
+Работа ведётся в feature/refactoring-ветках, а не напрямую в стабильной базовой ветке.
 
-Example:
+Пример:
 
 ```bash
 git switch -c refactor/architecture
 ```
 
-Small, focused commits are preferred so that individual changes can be reviewed, tested and reverted independently.
+Предпочтение отдаётся небольшим, сфокусированным коммитам, чтобы отдельные изменения можно было проверять, тестировать и откатывать независимо друг от друга.
 
-## Documentation
+## Документация
 
-Project documentation is kept in [`documents/`](documents/):
+Документация проекта хранится в [`documents/`](documents/):
 
-- [`DESIGN.md`](documents/DESIGN.md) — target architecture and design principles
-- [`ROADMAP.md`](documents/ROADMAP.md) — development roadmap and milestones
-- [`TECHNICAL.md`](documents/TECHNICAL.md) — technical stack and implementation details
-- [`REFACTORING.md`](documents/REFACTORING.md) — planned refactoring strategy
-- [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) — third-party software and license inventory
+- [`DESIGN.md`](documents/DESIGN.md) — целевая архитектура и принципы проектирования
+- [`ROADMAP.md`](documents/ROADMAP.md) — дорожная карта разработки и вехи
+- [`TECHNICAL.md`](documents/TECHNICAL.md) — технический стек и детали реализации
+- [`REFACTORING.md`](documents/REFACTORING.md) — план стратегии рефакторинга
+- [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) — перечень стороннего ПО и лицензий
 
-## Licensing
+## Лицензирование
 
-SLADE is distributed under the **GNU General Public License, version 2 (GPL-2.0)**.
+SLADE распространяется под лицензией **GNU General Public License версии 2 (GPL-2.0)**.
 
-This repository also contains third-party components under their own licenses, including MIT-licensed libraries, public-domain code, and components with their own permissive license terms.
+Этот репозиторий также содержит сторонние компоненты под собственными лицензиями, включая библиотеки под лицензией MIT, код, находящийся в общественном достоянии, а также компоненты с собственными разрешительными условиями лицензирования.
 
-The original license and copyright notices for third-party components are preserved with the corresponding source code.
+Оригинальные уведомления о лицензии и авторских правах для сторонних компонентов сохранены вместе с соответствующим исходным кодом.
 
-See:
+См.:
 
 - [`app/src/main/cpp/third_party/SLADE/LICENSE`](app/src/main/cpp/third_party/SLADE/LICENSE)
 - [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)
 
-> **Important:** The overall licensing boundary between project-owned Android code and integrated GPL-covered SLADE code is intentionally not presented here as a single new repository-wide license. The licensing structure should be reviewed before publishing a final distribution under a new overall licensing scheme.
+> **Важно:** общая граница лицензирования между собственным кодом проекта для Android и интегрированным кодом SLADE под GPL намеренно не представлена здесь в виде единой новой лицензии для всего репозитория. Структуру лицензирования следует пересмотреть перед публикацией окончательного дистрибутива под новой общей схемой лицензирования.
 
-## Project Philosophy
+## Философия проекта
 
-The project follows a few practical principles:
+Проект следует нескольким практическим принципам:
 
-1. **Android first** — development must remain possible without a desktop PC.
-2. **Preserve working functionality** — refactoring should not unnecessarily break the existing MVP.
-3. **Use the SLADE core** — avoid rewriting mature functionality without a strong reason.
-4. **Keep boundaries clear** — Android UI, application state, JNI and native archive logic should have explicit responsibilities.
-5. **Test before expanding** — structural changes should be validated before adding large new features.
-6. **Small Git commits** — every significant change should remain easy to inspect and revert.
-7. **Plan for growth** — the architecture should eventually support more archive formats and resource editors without turning the Android layer into a monolith.
+1. **Android прежде всего** — разработка должна оставаться возможной без настольного ПК.
+2. **Сохранение работающей функциональности** — рефакторинг не должен без необходимости ломать существующий MVP.
+3. **Использование ядра SLADE** — избегать переписывания зрелой функциональности без веской причины.
+4. **Чёткие границы** — UI Android, состояние приложения, JNI и логика работы с нативными архивами должны иметь чётко определённые зоны ответственности.
+5. **Тестирование перед расширением** — структурные изменения должны быть проверены перед добавлением крупных новых функций.
+6. **Небольшие коммиты в Git** — каждое значимое изменение должно оставаться легко проверяемым и откатываемым.
+7. **Планирование роста** — архитектура должна в конечном итоге поддерживать больше форматов архивов и редакторов ресурсов, не превращая слой Android в монолит.
 
-## Disclaimer
+## Отказ от ответственности
 
-SLADE 3 MOBILE is an independent Android project/integration and is not presented as the official desktop SLADE project.
+SLADE 3 MOBILE — независимый проект/интеграция для Android и не позиционируется как официальный настольный проект SLADE.
 
-SLADE and its associated source code remain subject to their respective copyrights and licenses.
+SLADE и связанный с ним исходный код остаются предметом соответствующих авторских прав и лицензий.
