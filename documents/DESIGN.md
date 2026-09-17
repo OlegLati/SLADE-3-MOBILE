@@ -2,6 +2,11 @@
 
 > Архитектурный документ проекта SLADE Mobile: Android UI + native adapter + headless SLADE Core.
 
+Этот документ описывает архитектурные принципы и целевое устройство проекта.
+Фактическое состояние реализации фиксируется в `documents/TECHNICAL.md`, а
+последовательность разработки — в `documents/ROADMAP.md` и
+`documents/REFACTORING.md`.
+
 ## Содержание
 
 - [1. Overview](#1-overview)
@@ -12,194 +17,128 @@
 - [6. Archive Abstraction](#6-archive-abstraction)
 - [7. ArchiveSession](#7-archivesession)
 - [8. File Access](#8-file-access)
-- [9. mmap](#9-mmap)
-- [10. Threading](#10-threading)
-- [11. Native Resource Lifetime](#11-native-resource-lifetime)
-- [11.1. Structural Refactoring Policy](#111-structural-refactoring-policy)
+- [9. Threading](#9-threading)
+- [10. Native Resource Lifetime](#10-native-resource-lifetime)
+- [11. Structural Refactoring Policy](#11-structural-refactoring-policy)
 - [12. Entry Type System](#12-entry-type-system)
 - [13. Editor Architecture](#13-editor-architecture)
 - [14. Data vs Presentation](#14-data-vs-presentation)
 - [15. Archive Editing](#15-archive-editing)
-- [16. Transactional Save](#16-transactional-save)
-- [17. Safe Save Requirements](#17-safe-save-requirements)
-- [18. Undo / Redo](#18-undo--redo)
-- [19. Mobile UI](#19-mobile-ui)
-- [20. Text Editor](#20-text-editor)
-- [21. Image Editor](#21-image-editor)
-- [22. Doom Graphic Editor](#22-doom-graphic-editor)
-- [23. Palette Editor](#23-palette-editor)
-- [24. Texture Editor](#24-texture-editor)
-- [25. Audio](#25-audio)
-- [26. Hex Editor](#26-hex-editor)
-- [27. Map Architecture](#27-map-architecture)
-- [28. Map Data](#28-map-data)
-- [29. Map Renderer](#29-map-renderer)
-- [30. Security & Robustness](#30-security--robustness)
-- [31. Testing Philosophy](#31-testing-philosophy)
-- [32. Native Tests](#32-native-tests)
-- [33. Regression Testing](#33-regression-testing)
-- [34. Performance](#34-performance)
-- [35. Future Extensibility](#35-future-extensibility)
-- [36. Final Vision](#36-final-vision)
-
+- [16. Save Architecture](#16-save-architecture)
+- [17. Undo / Redo](#17-undo--redo)
+- [18. Mobile UI](#18-mobile-ui)
+- [19. Resource Editors](#19-resource-editors)
+- [20. Map Architecture](#20-map-architecture)
+- [21. Security & Robustness](#21-security--robustness)
+- [22. Testing Philosophy](#22-testing-philosophy)
+- [23. Performance](#23-performance)
+- [24. Future Extensibility](#24-future-extensibility)
+- [25. Final Vision](#25-final-vision)
 
 ## 1. Overview
 
-**SLADE Mobile** — Android-приложение для просмотра и редактирования Doom/WAD-ресурсов, построенное на базе headless-компонентов SLADE 3.
+**SLADE Mobile** — Android-приложение для просмотра и редактирования
+Doom/WAD-ресурсов, использующее выбранные headless-компоненты SLADE 3.
 
-Проект не является попыткой буквально перенести desktop-интерфейс SLADE 3 на Android.
+Это не буквальный перенос desktop UI SLADE на Android. Android UI,
+жизненный цикл, SAF и пользовательские workflows проектируются отдельно.
 
-Основная идея:
+Целевая схема:
 
 ```text
 SLADE 3 Source
-      │
-      ▼
+      ↓
 Headless SLADE Core
-      │
-      ▼
-Android Native Adapter
-      │
-     JNI
-      │
-      ▼
-Kotlin API
-      │
-      ▼
+      ↓
+Native Archive Layer
+      ↓
+JNI / Kotlin Native API
+      ↓
+Application State / ViewModel
+      ↓
 Android UI
 ```
 
-SLADE используется прежде всего как **backend для работы с форматами, архивами и Doom-ресурсами**, а пользовательский интерфейс проектируется отдельно с учётом мобильных устройств.
+## 2. Goals
 
----
+Долгосрочная цель — полноценный мобильный инструмент для Doom-моддинга.
+Он должен постепенно поддерживать:
 
-# 2. Goals
+- WAD и другие подходящие архивные форматы;
+- просмотр, поиск и фильтрацию entries;
+- импорт, экспорт, замену, удаление, переименование и перемещение;
+- сохранение с проверкой результата;
+- текстовые, графические, image, palette, texture, audio и binary editors;
+- в будущем — Doom map workflows.
 
-Основная цель проекта — создать полноценный мобильный инструмент для Doom-моддинга.
+Текущий продуктовый scope остаётся WAD-first: расширение форматов идёт
+после стабилизации базовой архитектуры.
 
-Пользователь должен иметь возможность:
+## 3. Non-Goals
 
-- открывать WAD;
-- открывать PK3/ZIP и другие поддерживаемые архивы;
-- просматривать содержимое архивов;
-- искать и фильтровать entries;
-- экспортировать ресурсы;
-- импортировать новые ресурсы;
-- заменять существующие ресурсы;
-- удалять entries;
-- переименовывать entries;
-- перемещать entries;
-- сохранять изменённые архивы;
-- редактировать текстовые ресурсы;
-- редактировать изображения;
-- редактировать Doom Graphics;
-- работать с палитрами;
-- редактировать текстуры;
-- просматривать и редактировать аудио-ресурсы;
-- использовать Hex Editor для бинарных данных;
-- в будущем редактировать Doom-карты.
+Проект не должен:
 
----
-
-# 3. Non-Goals
-
-Проект не должен пытаться:
-
-- портировать wxWidgets;
+- портировать wxWidgets целиком;
 - копировать desktop UI SLADE;
-- переносить всю desktop-инфраструктуру;
-- поддерживать ненужные GUI-зависимости SLADE;
-- превращать compatibility layer в замену всему desktop SLADE.
+- переносить desktop-инфраструктуру без необходимости;
+- превращать compatibility layer в независимую реализацию SLADE;
+- переписывать зрелую доменную логику SLADE без технической причины.
 
-Если часть SLADE нужна только для desktop GUI и не требуется headless core, она не должна автоматически переноситься в Android.
-
----
-
-# 4. Core Architecture
-
-Главный архитектурный принцип:
+## 4. Core Architecture
 
 ```text
 ┌─────────────────────────────┐
-│       Android UI            │
-│ Kotlin / Android Framework  │
-└──────────────┬──────────────┘
-               │
-              JNI
-               │
-┌──────────────▼──────────────┐
-│    Android Native Layer     │
-│ ArchiveSession / Adapters   │
+│ Android UI                  │
+│ Activity / Views / Dialogs  │
 └──────────────┬──────────────┘
                │
 ┌──────────────▼──────────────┐
-│       SLADE Core             │
-│ Archives / Formats / Utils  │
+│ Presentation / Application  │
+│ ViewModel / UI State         │
+│ Repository / orchestration   │
+└──────────────┬──────────────┘
+               │
+┌──────────────▼──────────────┐
+│ Kotlin Native API            │
+│ SladeNative                  │
+└──────────────┬──────────────┘
+               │ JNI
+┌──────────────▼──────────────┐
+│ Native Archive Layer         │
+│ Session / Operations / Save  │
+└──────────────┬──────────────┘
+               │
+┌──────────────▼──────────────┐
+│ SLADE Core                   │
+│ Archives / Formats / Utils   │
 └─────────────────────────────┘
 ```
 
----
+Рефакторинг этой схемы выполняется постепенно. Рабочий WAD MVP не
+переписывается с нуля.
 
-# 5. Separation of Responsibilities
+## 5. Separation of Responsibilities
 
-## 5.1. SLADE Core
+### SLADE Core
 
-Core отвечает за:
+Отвечает за переиспользуемую доменную логику архивов, форматов и Doom
+ресурсов. Не должен знать об Android UI.
 
-- parsing;
-- формат архивов;
-- чтение ресурсов;
-- запись ресурсов;
-- определение типов;
-- декодирование;
-- кодирование;
-- работу с внутренними структурами Doom.
+### Native layer
 
-Core не должен знать об Android UI.
+Отвечает за JNI boundary, Android file descriptors, native lifetime,
+archive session, сериализацию/валидацию и необходимые Android adapters.
 
----
+### Kotlin application layer
 
-## 5.2. Android Native Layer
+Отвечает за UI, lifecycle, application state, SAF, coroutine orchestration
+и преобразование domain data в presentation state.
 
-Native adapter отвечает за:
+Kotlin не должен зависеть от внутренних классов SLADE.
 
-- JNI;
-- file descriptors;
-- mmap;
-- lifecycle native objects;
-- преобразование данных между SLADE и Kotlin;
-- Android-specific filesystem operations;
-- безопасное управление native resources.
+## 6. Archive Abstraction
 
----
-
-## 5.3. Kotlin Layer
-
-Kotlin отвечает за:
-
-- application state;
-- lifecycle;
-- UI;
-- navigation;
-- background jobs;
-- SAF;
-- отображение данных;
-- user interaction.
-
-Kotlin не должен напрямую зависеть от внутренних классов SLADE.
-
----
-
-# 6. Archive Abstraction
-
-Вместо привязки UI к WAD желательно использовать абстракцию:
-
-```text
-Archive
- └── Entry
-```
-
-Например:
+Целевая доменная модель:
 
 ```text
 Archive
@@ -216,174 +155,99 @@ Entry
  └── data
 ```
 
-Тогда UI не должен знать, находится ли entry в:
+UI и application layer не должны знать, находится ли entry в WAD, PK3,
+ZIP или другом контейнере.
 
-```text
-WAD
-PK3
-ZIP
-GRP
-PAK
-```
+В текущем MVP реализация всё ещё WAD-specific.
 
----
+## 7. ArchiveSession
 
-# 7. ArchiveSession
-
-Для работы с редактируемым архивом используется концепция `ArchiveSession`.
+`ArchiveSession` представляет состояние редактируемого документа до
+сохранения:
 
 ```text
 ArchiveSession
  ├── source
- ├── mapped data
+ ├── archive data
  ├── archive
- ├── entries
  ├── modifications
- └── undo/redo history
+ └── dirty state
 ```
 
-Session отвечает за состояние документа до сохранения.
+Сейчас существует одна активная session, конкретно связанная с
+`WadArchive*`. Это осознанное ограничение WAD MVP. При добавлении второго
+архивного формата session должна перейти к абстракции над конкретным
+container type.
 
-В будущем это позволит поддерживать несколько открытых архивов:
+Undo/Redo не считается реализованной частью текущей session; это отдельный
+будущий слой command/history model.
 
-```text
-Session A → DOOM.WAD
-Session B → MOD.WAD
-Session C → SIGIL.WAD
-```
+## 8. File Access
 
-На ранней стадии допустима только одна активная session.
-
-**Implementation Note (Phase 6, реализовано):** текущий `ArchiveSession` (native-lib.cpp) владеет парой `MemChunk* mc_` + `WadArchive* wad_` с общим lifecycle и dirty-флагом — соответствует плану выше по духу, но типизирован конкретно на `WadArchive*`, а не на абстрактный `Archive*`. Обобщение до полиморфной абстракции понадобится при добавлении PK3/ZIP (Phase 19 в ROADMAP.md) — там же зафиксированы детали, что именно придётся переделать.
-
----
-
-# 8. File Access
-
-Android-файлы открываются через Storage Access Framework.
-
-Предпочтительный путь:
+Android-файлы открываются через Storage Access Framework:
 
 ```text
-SAF
+SAF Uri
  ↓
 ParcelFileDescriptor
  ↓
-raw file descriptor
+raw fd
  ↓
-mmap
- ↓
-SLADE MemChunk
-```
-
-Не следует без необходимости использовать:
-
-```text
-InputStream
- ↓
-ByteArray
- ↓
-JNI copy
-```
-
-для больших архивов.
-
----
-
-# 9. mmap
-
-`mmap` используется для уменьшения количества лишних копирований данных между Android и native layer.
-
-Текущая архитектура не является полностью zero-copy:
-
-```text
-mmap
+fstat / mmap
  ↓
 MemChunk
+ ↓
+WadArchive
 ```
 
-поэтому данные всё ещё могут копироваться внутри native layer.
+Большие архивы не должны без необходимости проходить через Kotlin
+`ByteArray` и дополнительную JNI-копию.
 
-Полный zero-copy не является текущей целью.
+Архитектура не является полностью zero-copy: SLADE `MemChunk` всё ещё
+может содержать собственную копию данных.
 
----
+## 9. Threading
 
-# 10. Threading
-
-Тяжёлые операции не должны выполняться на Android UI thread.
-
-К ним относятся:
-
-- opening archive;
-- parsing;
-- type detection;
-- large entry reads;
-- saving;
-- validation;
-- resource conversion.
-
-Концептуальная схема:
+Нативное состояние archive session не thread-safe. Поэтому все операции,
+которые обращаются к текущей session, проходят через один выделенный
+native executor:
 
 ```text
-UI Thread
-    │
-    ├── request
-    ▼
-Background Worker
-    │
-    ├── Native processing
-    │
-    ▼
-Main Thread
-    │
-    └── UI update
+UI
+ ↓
+request
+ ↓
+single native executor
+ ↓
+JNI / ArchiveSession
+ ↓
+result
+ ↓
+UI
 ```
 
-На Kotlin рекомендуется использовать coroutines и подходящий background dispatcher.
+Это сохраняет инвариант: одновременно native session трогает только один
+поток.
 
-**Implementation Note (Phase 5, реализовано):** `SladeNative.kt` использует **один выделенный поток** (`Executors.newSingleThreadExecutor` + `asCoroutineDispatcher()`), а не общий thread pool (`Dispatchers.IO`) — сознательный выбор, а не недосмотр: `ArchiveSession` на native-стороне не thread-safe, и один выделенный поток сохраняет тот же инвариант "одновременно только один поток трогает native-состояние", который раньше обеспечивался просто тем, что все вызовы шли с UI thread.
+Coroutine cancellation может отменить queued работу, но не должна
+предполагаться как механизм прерывания уже выполняющегося blocking JNI call.
 
----
+## 10. Native Resource Lifetime
 
-# 11. Native Resource Lifetime
-
-Все native resources должны иметь предсказуемый lifecycle:
+Все native resources должны иметь явный lifecycle:
 
 ```text
-open
- ↓
-use
- ↓
-close
- ↓
-free
+open → use → close → free
 ```
 
-Особое внимание:
+Особое внимание требуется для fd, mmap, `MemChunk`, `WadArchive`, native
+handles и JNI references.
 
-- `mmap`;
-- `MemChunk`;
-- `WadArchive`;
-- native handles;
-- JNI references.
+Не допускаются leaks, double free, dangling pointers и use-after-free.
 
-Не допускаются:
+## 11. Structural Refactoring Policy
 
-- memory leaks;
-- double free;
-- dangling pointers;
-- use-after-free.
-
----
-
-
-# 11.1. Structural Refactoring Policy
-
-Проект развивается через постепенный structural refactoring. Рефакторинг
-начинается **до** добавления большого количества новых редакторов и форматов,
-потому что текущий WAD MVP уже предоставляет стабильный regression baseline.
-
-Основные правила:
+Рефакторинг выполняется extraction-подходом:
 
 ```text
 UI
@@ -392,7 +256,7 @@ ViewModel / application state
  ↓
 Repository / domain API
  ↓
-Kotlin native API
+Kotlin Native API
  ↓
 JNI adapter
  ↓
@@ -402,15 +266,12 @@ SLADE Core
 ```
 
 `MainActivity` не должна владеть archive business logic, а JNI не должен
-содержать алгоритмы работы с архивом.
+становиться местом реализации самостоятельной archive domain logic.
 
-Текущие крупные файлы (`MainActivity.kt`, `native-lib.cpp`) следует уменьшать
-путём извлечения уже существующих ответственностей, а не переписыванием
-проекта с нуля.
+Крупные файлы (`MainActivity.kt`, `native-lib.cpp`) уменьшаются постепенно,
+путём извлечения существующих ответственностей.
 
-Подробный пошаговый план находится в `documents/REFACTORING.md`.
-
-## Refactoring checkpoints
+Контрольные точки:
 
 ```text
 R0  Baseline / regression protection
@@ -426,43 +287,34 @@ R9  Performance profiling
 R10 PK3/ZIP readiness
 ```
 
-Производительность не является первым этапом. Сначала фиксируются ownership,
-lifecycle и API boundaries; затем bottlenecks измеряются профилировщиком и
-только после этого оптимизируются.
+## 12. Entry Type System
 
-# 12. Entry Type System
+Текущий WAD MVP использует временный Android-side classifier.
 
-Временная архитектура может использовать Android-specific detection для некоторых ресурсов.
-
-Целевая архитектура:
+Цель:
 
 ```text
-SLADE EntryType
-       ↓
-Unified detection
-       ↓
-Android
+SLADE EntryType / domain knowledge
+             ↓
+      unified detection
+             ↓
+      Android presentation
 ```
 
-Необходимо избегать долгосрочного существования двух независимых систем определения типов.
+Нельзя позволять временной detection logic стать второй постоянной
+системой типов. При этом текущий WAD classifier не следует искусственно
+обобщать под PK3/ZIP до появления соответствующего archive API.
 
-**Implementation Note:** текущая detection — это `androidDetectEntryType()` (compat/slade_shims.cpp), самостоятельная byte-signature/name эвристика, не связанная с настоящим SLADE `EntryType` engine (который требует ZIP-based resource-архивы, ещё не портированные). Работает достаточно для WAD, но заточена под плоские 8-символьные имена и не переживёт PK3/ZIP as-is (там нормальные пути с расширениями и папками) — см. Phase 4 и Phase 19 в ROADMAP.md.
+## 13. Editor Architecture
 
----
-
-# 13. Editor Architecture
-
-Редакторы выбираются по типу entry.
+Редактор выбирается по типу entry:
 
 ```text
 Entry
- │
- ▼
+ ↓
 EntryType
- │
- ▼
+ ↓
 EditorRegistry
- │
  ├── TextEditor
  ├── ImageEditor
  ├── GraphicEditor
@@ -473,50 +325,28 @@ EditorRegistry
  └── MapEditor
 ```
 
-Archive browser не должен знать детали реализации конкретных редакторов.
+Archive browser не должен знать детали реализации отдельных редакторов.
 
----
+## 14. Data vs Presentation
 
-# 14. Data vs Presentation
-
-Native слой должен предоставлять **данные**, а не UI-ориентированные операции.
-
-Предпочтительно:
+Native API должен постепенно переходить от UI-oriented методов к данным:
 
 ```text
 readEntry()
-```
-
-вместо большого количества функций:
-
-```text
-getEntryImage()
-getEntryPng()
-getEntryPalette()
-getEntryText()
-getEntryAudio()
-...
-```
-
-Специализированные функции допустимы на prototype-стадии.
-
-Целевая модель:
-
-```text
-Entry
- ↓
+    ↓
 EntryData
- ↓
+    ↓
 Kotlin
- ↓
+    ↓
 appropriate editor
 ```
 
----
+Специализированные preview helpers допустимы на текущей prototype/MVP
+стадии, но не должны определять окончательную архитектуру native API.
 
-# 15. Archive Editing
+## 15. Archive Editing
 
-Основные операции:
+Мутирующие операции:
 
 ```text
 add
@@ -527,60 +357,64 @@ replace
 export
 ```
 
-Они должны выполняться через `ArchiveSession`, а не непосредственно над оригинальным файлом.
+Они должны работать над session state, а не напрямую над исходным файлом.
 
-**Implementation Note (Phase 7):** add/remove/rename/replace/export реализованы через `ArchiveSession` (native-lib.cpp) — все мутирующие операции (`renameEntry`, `deleteEntry`, `addEntry`, `replaceEntry`) идут через `g_session.archive()`, никогда напрямую над исходными байтами файла. `move` пока не реализован.
+В текущем MVP `add`, `remove`, `rename`, `move`, `replace` и `export`
+реализованы через WAD `ArchiveSession`.
 
----
+## 16. Save Architecture
 
-# 16. Transactional Save
-
-Оригинальный архив не должен изменяться напрямую во время редактирования.
-
-Предпочтительный алгоритм:
+Базовый принцип сохраняется:
 
 ```text
 Original Archive
-       │
-       ▼
+       ↓
 ArchiveSession
-       │
-       ├── modifications
-       │
-       ▼
-Temporary Output
-       │
-       ▼
-Validation
-       │
-       ▼
-Replace / Save As
+       ↓
+modifications
+       ↓
+serialized output
+       ↓
+validation
+       ↓
+Save As / Commit
 ```
 
-**Implementation Note (Phase 8, частично):** главный принцип раздела — "оригинал не должен изменяться напрямую" — уже соблюдается: Save As пишет в **новый** файл через отдельный SAF-picker (`ACTION_CREATE_DOCUMENT`), исходный файл открывается только на чтение и второй writable-дескриптор к нему никогда не привязывается. Полная цепочка Temporary Output → Validation → Replace (замена оригинала на месте) пока не реализована — см. Phase 8 в ROADMAP.md.
+### Save As
 
----
+Save As всегда пишет в новый SAF destination и не требует записи в
+исходный документ.
 
-# 17. Safe Save Requirements
+### Save in-place
 
-Перед заменой оригинального файла желательно проверить:
+Текущая реализация использует:
 
-- archive header;
-- directory;
-- entry offsets;
-- entry sizes;
-- bounds;
-- структуру output;
-- возможность повторного открытия сохранённого архива.
+```text
+serialize in memory
+       ↓
+independent validation/reopen
+       ↓
+open original URI as "rwt"
+       ↓
+commit validated bytes
+```
 
-**Цель:**
-> Если операция сохранения завершилась успешно, полученный архив должен быть пригоден для повторного открытия.
+Это защищает от записи заведомо невалидного сериализованного результата до
+этапа validation.
 
----
+Однако это **не атомарная файловая замена**: SAF не предоставляет
+приложению универсальный `rename()` поверх произвольного выбранного
+`content://` URI. Открытие `"rwt"` может усечь файл до завершения записи.
 
-# 18. Undo / Redo
+Поэтому документация не должна называть текущий in-place Save
+"полностью crash-safe" или "atomic replacement".
 
-Редактирование желательно строить вокруг command/history model.
+IWAD намеренно не разрешается перезаписывать через in-place Save; для него
+используется Save As.
+
+## 17. Undo / Redo
+
+Целевая модель — command/history layer:
 
 ```text
 Command
@@ -589,363 +423,91 @@ Command
  ├── Add
  ├── Delete
  └── Move
+
+History
+ ├── Undo
+ └── Redo
 ```
 
-History:
+Undo/Redo пока не является частью завершённого WAD MVP и не должен
+описываться как уже реализованная функция.
 
-```text
-Undo
-Redo
-```
+## 18. Mobile UI
 
-Это также позволит отказаться от немедленного изменения оригинального файла.
-
----
-
-# 19. Mobile UI
-
-SLADE Mobile не должен копировать desktop UI.
-
-UI должен быть рассчитан на:
+UI проектируется отдельно от desktop SLADE и учитывает:
 
 - touch;
-- маленькие экраны;
+- небольшие экраны;
 - tablets;
-- portrait;
-- landscape;
+- portrait/landscape;
 - long press;
-- gestures.
+- gestures;
+- мобильные file workflows.
 
----
+Archive browser должен оставаться независимым от конкретных редакторов.
 
-## 19.1. Archive Browser
+## 19. Resource Editors
 
-Пример:
+Планируемые редакторы включают:
 
-```text
-┌─────────────────────────┐
-│ DOOM.WAD            ⋮   │
-├─────────────────────────┤
-│ 🔍 Search               │
-├─────────────────────────┤
-│ PLAYPAL       Palette   │
-│ TITLEPIC      Graphic   │
-│ E1M1          Map       │
-│ TEXTURE1      Texture   │
-│ DECORATE      Text      │
-│ DSBANK        Sound     │
-└─────────────────────────┘
-```
+- Text Editor;
+- Image Editor;
+- Doom Graphic Editor;
+- Palette Editor;
+- Texture Editor;
+- Audio Browser/Player;
+- Hex Editor.
 
----
+Их реализация выполняется после прохождения соответствующих этапов
+структурного рефакторинга и тестирования.
 
-## 19.2. Context Menu
+## 20. Map Architecture
 
-Long press entry:
-
-```text
-Rename
-Replace
-Export
-Delete
-Move
-Properties
-```
-
----
-
-# 20. Text Editor
-
-Основные функции:
-
-- editing;
-- undo;
-- redo;
-- search;
-- replace;
-- go to line;
-- copy;
-- paste;
-- line numbers.
-
-Дополнительно:
-
-- syntax highlighting;
-- bracket matching;
-- autocomplete;
-- error highlighting.
-
-Поддерживаемые направления:
-
-```text
-DECORATE
-ZScript
-ACS
-MAPINFO
-ZMAPINFO
-TEXTURES
-ANIMDEFS
-SNDINFO
-GLDEFS
-```
-
----
-
-# 21. Image Editor
-
-Поддерживаемые типы:
-
-```text
-PNG
-JPEG
-Doom Graphic
-Flat
-Patch
-```
-
-Основные функции:
-
-- zoom;
-- pan;
-- edit;
-- replace;
-- export;
-- undo.
-
----
-
-# 22. Doom Graphic Editor
-
-Специфические данные:
-
-```text
-pixels
-palette
-transparent color
-offset X
-offset Y
-width
-height
-```
-
-**MVP:**
-- pixel drawing;
-- erase;
-- color picker;
-- zoom;
-- palette selection;
-- offset editing;
-- PNG import;
-- PNG export.
-
----
-
-# 23. Palette Editor
-
-Поддержка:
-
-```text
-PLAYPAL
-custom palettes
-```
-
-Функции:
-
-- inspect colors;
-- RGB values;
-- edit;
-- import;
-- export.
-
-**В будущем:**
-- palette conversion;
-- recoloring.
-
----
-
-# 24. Texture Editor
-
-Работа с:
-
-```text
-TEXTURE1
-TEXTURE2
-PNAMES
-```
-
-Функции:
-
-- create;
-- delete;
-- rename;
-- resize;
-- add patch;
-- remove patch;
-- move patch;
-- edit offsets;
-- preview.
-
-**Touch interaction:**
-- tap;
-- drag;
-- pinch zoom;
-- long press.
-
----
-
-# 25. Audio
-
-Поддерживаемые направления:
-
-```text
-WAV
-OGG
-MP3
-Doom sound resources
-Music
-```
-
-**MVP:**
-- play;
-- pause;
-- seek;
-- metadata;
-- export;
-- replace.
-
----
-
-# 26. Hex Editor
-
-Fallback editor для неизвестных и бинарных entries.
-
-Пример:
-
-```text
-Offset     Hex                     ASCII
-
-00000000   44 4F 4F 4D ...        DOOM...
-```
-
-Функции:
-
-- view;
-- edit;
-- search;
-- goto offset;
-- copy;
-- paste;
-- undo.
-
----
-
-# 27. Map Architecture
-
-Map Editor должен иметь отдельную архитектуру.
+Map Editor должен иметь отдельную архитектуру:
 
 ```text
 MapEntry
-   ↓
+ ↓
 MapModel
-   ↓
+ ↓
 Geometry
-   ↓
+ ↓
 Renderer
-   ↓
+ ↓
 Interaction Layer
 ```
 
 Он не должен быть просто ещё одним `EntryEditor`.
 
----
+Планируемые map formats включают Doom/Doom II, Hexen, Boom и UDMF/ZDoom
+варианты по мере развития проекта.
 
-# 28. Map Data
+## 21. Security & Robustness
 
-Основные объекты:
+Любой внешний архив считается потенциально повреждённым.
 
-```text
-Vertex
-Linedef
-Sidedef
-Sector
-Thing
-```
+Нельзя без проверки доверять:
 
-Поддерживаемые форматы должны добавляться постепенно:
+- offsets;
+- sizes;
+- counts;
+- dimensions;
+- directory data.
 
-```text
-Doom
-Doom II
-Hexen
-Boom
-UDMF
-ZDoom
-```
+Бинарные parser paths должны выполнять bounds checking до доступа к памяти.
 
----
+## 22. Testing Philosophy
 
-# 29. Map Renderer
+Функция считается готовой не только после успешного happy path.
 
-Renderer должен быть независим от UI.
+Ключевой regression flow:
 
 ```text
-MapModel
-   ↓
-Render data
-   ↓
-Android renderer
-```
-
-Это позволит впоследствии реализовать:
-
-- zoom;
-- pan;
-- grid;
-- selection;
-- highlighting;
-- different render modes.
-
----
-
-# 30. Security & Robustness
-
-Любой пользовательский архив следует считать потенциально повреждённым.
-
-Нельзя доверять:
-
-```text
-offset
-size
-count
-width
-height
-directory data
-```
-
-Каждый parser обязан выполнять bounds checking.
-
-Например:
-
-```text
-offset >= 0
-size >= 0
-offset + size <= file_size
-```
-
-Аналогичные проверки необходимы во всех бинарных форматах.
-
----
-
-# 31. Testing Philosophy
-
-Функция считается готовой не тогда, когда она работает на одном хорошем файле.
-
-Например:
-
-```text
-Replace
+Open
  ↓
-Save
+Modify
+ ↓
+Save / Save As
  ↓
 Close
  ↓
@@ -954,73 +516,27 @@ Reopen
 Verify
 ```
 
-должно быть частью тестирования.
+R0 должен превратить уже подтверждённые WAD workflows в воспроизводимый
+baseline с fixtures, ожидаемыми entry counts и другими полезными
+проверками.
 
----
+## 23. Performance
 
-# 32. Native Tests
+Оптимизация выполняется после фиксации ownership и API boundaries.
 
-Необходимо иметь fixtures:
-
-```text
-empty.wad
-single_entry.wad
-normal.wad
-large.wad
-corrupted_header.wad
-truncated.wad
-invalid_directory.wad
-```
-
-Основные тесты:
-
-```text
-test_open_wad
-test_empty_wad
-test_directory
-test_entry_data
-test_invalid_offset
-test_invalid_size
-test_corrupted_archive
-```
-
----
-
-# 33. Regression Testing
-
-Изменения SLADE core должны проверяться:
-
-```text
-Build
- ↓
-Native tests
- ↓
-Archive tests
- ↓
-Android integration
-```
-
-Особенно при обновлении upstream SLADE.
-
----
-
-# 34. Performance
-
-Проект должен учитывать большие архивы.
-
-Требования:
+Приоритеты:
 
 - background parsing;
-- efficient memory usage;
-- mmap where appropriate;
-- lazy loading where possible;
-- efficient lists;
-- отсутствие ненужных JVM/native copies;
+- разумное использование памяти;
+- mmap там, где он действительно помогает;
+- lazy loading там, где это уместно;
+- эффективные списки;
+- отсутствие ненужных Kotlin/native copies;
 - своевременное освобождение native resources.
 
----
+Профилирование предшествует целевым performance changes.
 
-# 35. Future Extensibility
+## 24. Future Extensibility
 
 Целевая структура:
 
@@ -1032,7 +548,8 @@ Archive
  └── future formats
 ```
 
-**и:**
+и:
+
 ```text
 Entry
  ├── Text
@@ -1045,13 +562,13 @@ Entry
  └── Map
 ```
 
-Добавление нового формата или редактора не должно требовать переписывания archive browser.
+Добавление нового формата или редактора не должно требовать переписывания
+archive browser и Android UI state model.
 
----
+## 25. Final Vision
 
-# 36. Final Vision
-
-Конечный продукт должен восприниматься как самостоятельный Android-инструмент:
+Конечный продукт должен восприниматься как самостоятельный Android-
+инструмент:
 
 > **SLADE Mobile — мобильный редактор Doom/WAD-ресурсов, использующий SLADE как backend.**
 
@@ -1073,4 +590,5 @@ Validate
 Use in Doom
 ```
 
-Map Editor является последней крупной подсистемой проекта.
+Расширение до новых форматов, полноценных resource editors и map tooling
+происходит после стабилизации WAD MVP и архитектурного фундамента.
