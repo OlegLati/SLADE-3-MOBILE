@@ -62,3 +62,16 @@ The test suite still does not exercise Android SAF file descriptors, JNI marshal
 Serialization is now isolated in `app/src/main/cpp/ArchiveSerializer.h/.cpp`. The regression target verifies that a modified session can be serialized and reopened with the modification intact.
 
 The JNI bridge no longer owns the WAD serialization algorithm; it delegates to the serializer. Android file-descriptor I/O and the two-step Kotlin save orchestration remain outside this native unit-test layer.
+
+## R0.3 SaveCoordinator coverage
+
+The Safe Save validation step is now isolated in `app/src/main/cpp/SaveCoordinator.h/.cpp`. The regression target verifies that:
+
+- validation fails cleanly when no archive is open;
+- a modified session can be validated by serializing and reopening the generated WAD;
+- the validated byte buffer is retained as the session's pending save;
+- the pending save can be reopened and still contains the edited entry name.
+
+The JNI bridge now delegates `nativeValidateForSave()` to `SaveCoordinator`. The actual Android file-descriptor write in `nativeCommitSave()` remains in the JNI bridge deliberately: SAF/FD ownership is an Android integration concern, while the coordinator owns the serialization/reparse validation step.
+
+Save/Save As behavior is therefore unchanged by the extraction. Manual verification also confirms that both paths continue to work correctly after the refactor.
