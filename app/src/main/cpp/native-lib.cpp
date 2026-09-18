@@ -18,6 +18,8 @@
 
 #include "Archive/Formats/WadArchive.h"
 #include "Utility/MemChunk.h"
+#include "ArchiveSession.h"
+#include "ArchiveSerializer.h"
 using namespace slade;
 
 // WadArchive::write() refuses to serialize an IWAD (e.g. DOOM.WAD) at all
@@ -62,8 +64,6 @@ std::string androidDetectEntryType(std::string_view upperName, uint32_t size, co
 // that's why they're owned together by one object with one lifetime,
 // rather than as two independently-managed globals.
 // -----------------------------------------------------------------------
-#include "ArchiveSession.h"
-
 namespace
 {
 slade_mobile::ArchiveSession g_session;
@@ -150,8 +150,6 @@ const uint8_t* entryDataPtr(jint index, uint32_t* outSize, ArchiveEntry** outEnt
 // the scenario iwad_lock exists to guard against -- left untouched, so
 // write() can refuse a real IWAD on its own and report why via
 // global::error (checked by the caller).
-#include "ArchiveSerializer.h"
-
 namespace
 {
 slade_mobile::ArchiveSerializer g_serializer;
