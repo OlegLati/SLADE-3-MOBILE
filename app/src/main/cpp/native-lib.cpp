@@ -281,7 +281,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_openWadFileFd(
         return result;
     }
 
-    return buildEntryListArray(env);
+    return slade_mobile::buildEntryListArray(env, g_session);
 }
 
 // -----------------------------------------------------------------------
@@ -564,7 +564,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeListEntries(
 
     if (!g_session.isOpen())
         return env->NewObjectArray(0, env->FindClass("java/lang/String"), nullptr);
-    return buildEntryListArray(env);
+    return slade_mobile::buildEntryListArray(env, g_session);
 }
 
 // Whether the session has unsaved changes (Phase 6/9 dirty-state
