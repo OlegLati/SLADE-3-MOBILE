@@ -168,7 +168,7 @@ SLADE_3_MOBILE/
 │   ├── ROADMAP.md
 │   ├── TECHNICAL.md
 │   └── REFACTORING.md
-├── THIRD_PARTY_NOTICES.md
+├── documents/THIRD_PARTY_NOTICES.md
 ├── README.md
 ├── README_ENG.md
 ├── build.gradle
@@ -181,7 +181,7 @@ SLADE_3_MOBILE/
 
 Важные файлы лицензий намеренно хранятся вместе с соответствующими исходными деревьями.
 
-Список сторонних лицензий см. в [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+Список сторонних лицензий см. в [`documents/THIRD_PARTY_NOTICES.md`](documents/THIRD_PARTY_NOTICES.md).
 
 ## Сборка
 
