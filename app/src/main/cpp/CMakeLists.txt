@@ -69,6 +69,19 @@ target_compile_options(slade_core PUBLIC
 find_package(ZLIB REQUIRED)
 target_link_libraries(slade_core PUBLIC z log)
 
+# Optional native regression tests. Keep disabled for normal app builds; enable
+# explicitly when validating the headless SLADE core after structural changes.
+option(BUILD_NATIVE_TESTS "Build native WAD regression tests" OFF)
+
+if(BUILD_NATIVE_TESTS)
+    add_executable(native_wad_tests
+            tests/native_wad_tests.cpp)
+
+    target_link_libraries(native_wad_tests
+            slade_core
+            log)
+endif()
+
 # NEXT FILES TO ADD, roughly in order of usefulness/difficulty:
 #   Archive/Formats/DirArchive.cpp                   (no extra deps)
 #   Archive/Formats/GrpArchive.cpp, PakArchive.cpp    (simple formats)
