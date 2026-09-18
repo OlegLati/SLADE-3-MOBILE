@@ -1,5 +1,7 @@
 #include "FileDescriptorIO.h"
 
+#include <cstdint>
+
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
