@@ -208,6 +208,44 @@ void testArchiveOperations()
     check(operations.remove(session, 0), "ArchiveOperations remove succeeds");
     check(session.isDirty(), "remove marks session dirty");
     check(session.archive()->numEntries() == 0, "remove deletes the entry");
+
+    check(session.open(bytes.data(), static_cast<uint32_t>(bytes.size())),
+          "reopen session for add/replace operations");
+
+    const char replacement[] = "XYZ";
+    session.clearDirty();
+    check(operations.replace(session, 0, replacement, 3),
+          "ArchiveOperations replace succeeds");
+    check(session.isDirty(), "replace marks session dirty");
+    auto* replaced = session.archive()->entryAt(0);
+    check(replaced != nullptr && replaced->size() == 3, "replace updates entry size");
+    const auto* replacedData = replaced->rawData(false);
+    check(replacedData != nullptr && replacedData[0] == 'X' && replacedData[1] == 'Y'
+              && replacedData[2] == 'Z',
+          "replace updates entry data");
+
+    const char addedData[] = "12345";
+    session.clearDirty();
+    check(operations.add(session, "ADDED", addedData, 5),
+          "ArchiveOperations add succeeds");
+    check(session.isDirty(), "add marks session dirty");
+    check(session.archive()->numEntries() == 2, "add appends an entry");
+    check(session.archive()->entryAt(1)->name() == "ADDED",
+          "add preserves entry name");
+
+    MemChunk serialized;
+    slade_mobile::ArchiveSerializer serializer;
+    check(serializer.serialize(session, serialized, true),
+          "serialize add/replace operations");
+
+    WadArchive reopened;
+    check(reopened.open(serialized), "reopen add/replace output");
+    check(reopened.numEntries() == 2, "reopened add/replace output has two entries");
+    check(reopened.entryAt(0)->size() == 3, "replaced entry size survives serialization");
+    check(reopened.entryAt(1)->name() == "ADDED", "added entry survives serialization");
+    const auto* addedDataAgain = reopened.entryAt(1)->rawData(false);
+    check(addedDataAgain != nullptr && addedDataAgain[0] == '1' && addedDataAgain[4] == '5',
+          "added entry data survives serialization");
 }
 
 void testArchiveSessionPendingSave()
