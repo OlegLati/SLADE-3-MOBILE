@@ -1,6 +1,5 @@
 #include "Main.h"
 #include "ArchiveEntryList.h"
-#include "ArchiveEntryReader.h"
 
 #include <sstream>
 
@@ -8,7 +7,6 @@ namespace slade
 {
 std::string androidDetectEntryType(std::string_view upperName, uint32_t size, const uint8_t* data);
 }
-
 
 namespace slade_mobile
 {
@@ -46,7 +44,7 @@ jobjectArray buildEntryListArray(JNIEnv* env, ArchiveSession& session)
                     ptr = mc->data() + offset;
             }
 
-            line << entry->name() << "\t" << size << "\t" << androidDetectEntryType(entry->upperName(), size, ptr);
+            line << entry->name() << "\t" << size << "\t" << slade::androidDetectEntryType(entry->upperName(), size, ptr);
         }
         else
             line << "?\t0\t?";
@@ -59,6 +57,5 @@ jobjectArray buildEntryListArray(JNIEnv* env, ArchiveSession& session)
 
     return result;
 }
-
 
 }
