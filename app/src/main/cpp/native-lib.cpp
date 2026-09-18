@@ -21,6 +21,7 @@
 #include "ArchiveSession.h"
 #include "ArchiveSerializer.h"
 #include "SaveCoordinator.h"
+#include "ArchiveOperations.h"
 using namespace slade;
 
 // WadArchive::write() refuses to serialize an IWAD (e.g. DOOM.WAD) at all
@@ -155,6 +156,7 @@ namespace
 {
 slade_mobile::ArchiveSerializer g_serializer;
 slade_mobile::SaveCoordinator g_saveCoordinator;
+slade_mobile::ArchiveOperations g_archiveOperations;
 }
 
 
@@ -1132,11 +1134,8 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryAudioInfo(
 // file in place with a verify-before-replace step.
 // -----------------------------------------------------------------------
 
-// Renames the entry at `index` to `newName`. Returns false (and leaves
-// the entry unchanged) if the archive isn't open, the index is invalid,
-// or WadArchive::renameEntry() itself rejects the name (e.g. name too
-// long for the WAD directory's fixed 8-byte slot -- `force=false` here,
-// so SLADE's own validation applies rather than silently truncating).
+// Archive edit operations are implemented by ArchiveOperations; the JNI layer
+// only converts Android/Kotlin arguments and return values.
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_oleglati_slade_13_1mobile_SladeNative_nativeRenameEntry(
         JNIEnv* env,
@@ -1144,74 +1143,34 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeRenameEntry(
         jint index,
         jstring newName) {
 
-    if (!g_session.isOpen() || index < 0)
-        return JNI_FALSE;
-
-    auto* wad   = g_session.archive();
-    auto* entry = wad->entryAt(static_cast<unsigned>(index));
-    if (!entry)
+    if (index < 0 || !newName)
         return JNI_FALSE;
 
     const char* nameChars = env->GetStringUTFChars(newName, nullptr);
-    const bool  ok        = wad->renameEntry(entry, nameChars);
-    env->ReleaseStringUTFChars(newName, nameChars);
+    if (!nameChars)
+        return JNI_FALSE;
 
-    if (ok)
-        g_session.markDirty();
+    const bool ok = g_archiveOperations.rename(
+            g_session, static_cast<unsigned>(index), nameChars);
+    env->ReleaseStringUTFChars(newName, nameChars);
     return ok ? JNI_TRUE : JNI_FALSE;
 }
 
-// Deletes the entry at `index`. Returns false under the same "nothing to
-// do" conditions as renameEntry(). IMPORTANT for the Kotlin side: every
-// index after the deleted one shifts down by one -- callers must refresh
-// their entry list via listEntries() rather than just removing one row
-// from a cached adapter list, or later taps will read the wrong entry.
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_oleglati_slade_13_1mobile_SladeNative_nativeDeleteEntry(
         JNIEnv* env,
         jobject /* this */,
         jint index) {
 
-    if (!g_session.isOpen() || index < 0)
+    if (index < 0)
         return JNI_FALSE;
 
-    auto* wad   = g_session.archive();
-    auto* entry = wad->entryAt(static_cast<unsigned>(index));
-    if (!entry)
-        return JNI_FALSE;
-
-    const bool ok = wad->removeEntry(entry);
-    if (ok)
-        g_session.markDirty();
-    return ok ? JNI_TRUE : JNI_FALSE;
+    return g_archiveOperations.remove(
+                   g_session, static_cast<unsigned>(index))
+            ? JNI_TRUE
+            : JNI_FALSE;
 }
 
-// Moves the entry at `index` to `newPosition` (Phase 7's last remaining
-// MVP operation). `newPosition` is an insertion index computed by the
-// Kotlin caller as `index - 1` (up) or `index + 1` (down) -- see
-// MainActivity.moveEntryBy() -- NOT re-derived here from a "direction"
-// enum, so this function stays a thin wrapper with no off-by-one logic
-// of its own to get wrong.
-//
-// IMPORTANT (WadArchive::moveEntry / Archive::moveEntry, SLADE source):
-// internally this removes the entry first, THEN inserts it at
-// `newPosition` in the now-one-shorter list. That means `newPosition` is
-// an index into the list AFTER removal, not the original list -- moving
-// entry at index 2 down to `newPosition=3` does NOT swap it with the old
-// index-3 entry the way it would if `newPosition` meant "the original
-// index 3 slot"; walking through it by hand: removing index 2 first
-// shifts the old index-3 entry down to sit at index 2, and inserting the
-// moved entry at position 3 puts it right after that (unchanged) entry --
-// i.e. exactly the adjacent swap "move down by one" should do. This only
-// happens to fall out correctly for the +-1 adjacent-swap case the UI
-// buttons use; a arbitrary drag-and-drop target index (future work, see
-// ROADMAP.md) will need an explicit adjustment here, not just index+-1.
-//
-// addEntry() (called internally past the removal step) clamps an
-// out-of-range position to "end of list" rather than failing -- so moving
-// the second-to-last entry down (`newPosition == old entry count - 1`,
-// which is one past the last valid index in the post-removal list) still
-// correctly lands it at the very end instead of erroring out.
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_oleglati_slade_13_1mobile_SladeNative_nativeMoveEntry(
         JNIEnv* env,
@@ -1219,18 +1178,15 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeMoveEntry(
         jint index,
         jint newPosition) {
 
-    if (!g_session.isOpen() || index < 0 || newPosition < 0)
+    if (index < 0 || newPosition < 0)
         return JNI_FALSE;
 
-    auto* wad   = g_session.archive();
-    auto* entry = wad->entryAt(static_cast<unsigned>(index));
-    if (!entry)
-        return JNI_FALSE;
-
-    const bool ok = wad->moveEntry(entry, static_cast<unsigned>(newPosition));
-    if (ok)
-        g_session.markDirty();
-    return ok ? JNI_TRUE : JNI_FALSE;
+    return g_archiveOperations.move(
+                   g_session,
+                   static_cast<unsigned>(index),
+                   static_cast<unsigned>(newPosition))
+            ? JNI_TRUE
+            : JNI_FALSE;
 }
 
 // Re-lists the currently-open session's entries in the same format as
