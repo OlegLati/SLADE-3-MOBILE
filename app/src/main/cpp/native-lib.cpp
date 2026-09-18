@@ -609,7 +609,6 @@ std::string audioInfoFor(const std::string& type, const uint8_t* data, uint32_t 
         return parseOgg(data, size);
     return "";
 }
-} // namespace
 
 // NOTE: method names below (MemChunk::importMem, WadArchive::open(MemChunk&),
 // Archive::numEntries) are best guesses based on the SLADE conventions we've
