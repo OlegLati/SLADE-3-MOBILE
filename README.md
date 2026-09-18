@@ -250,7 +250,7 @@ git switch -c refactor/architecture
 - [`ROADMAP.md`](documents/ROADMAP.md) — дорожная карта разработки и вехи;
 - [`TECHNICAL.md`](documents/TECHNICAL.md) — технический стек и детали реализации;
 - [`REFACTORING.md`](documents/REFACTORING.md) — стратегия структурного рефакторинга;
-- [`documents/THIRD_PARTY_NOTICES.md`](documents/THIRD_PARTY_NOTICES.md) — перечень стороннего ПО и лицензий.
+- [`THIRD_PARTY_NOTICES.md`](documents/THIRD_PARTY_NOTICES.md) — перечень стороннего ПО и лицензий.
 
 ## Лицензирование
 
