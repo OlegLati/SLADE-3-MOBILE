@@ -20,6 +20,7 @@
 #include "Utility/MemChunk.h"
 #include "ArchiveSession.h"
 #include "ArchiveSerializer.h"
+#include "SaveCoordinator.h"
 using namespace slade;
 
 // WadArchive::write() refuses to serialize an IWAD (e.g. DOOM.WAD) at all
@@ -153,6 +154,7 @@ const uint8_t* entryDataPtr(jint index, uint32_t* outSize, ArchiveEntry** outEnt
 namespace
 {
 slade_mobile::ArchiveSerializer g_serializer;
+slade_mobile::SaveCoordinator g_saveCoordinator;
 }
 
 
@@ -1345,36 +1347,8 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeValidateForSave(
         JNIEnv* env,
         jobject /* this */) {
 
-    if (!g_session.isOpen())
-        return env->NewStringUTF("Архив не открыт");
-
-    auto* wad = g_session.archive();
-    const unsigned expectedEntries = wad->numEntries();
-
-    auto out = std::make_unique<MemChunk>();
-    if (!g_serializer.serialize(g_session, *out, /*allowIwadOverwrite=*/false))
-        return env->NewStringUTF(global::error.c_str());
-
-    // Validation: re-parse the just-serialized bytes as an independent
-    // WadArchive (own MemChunk, own object -- doesn't touch g_session at
-    // all) rather than trusting that write() succeeding means the result
-    // is actually readable. Cheap insurance against a WadArchive::write()
-    // bug producing a directory SLADE itself can't parse back.
-    MemChunk validateMc;
-    validateMc.importMem(out->data(), static_cast<uint32_t>(out->size()));
-    WadArchive validate;
-    if (!validate.open(validateMc))
-        return env->NewStringUTF(("Проверка не пройдена: " + global::error).c_str());
-
-    if (validate.numEntries() != expectedEntries)
-    {
-        std::string msg = "Проверка не пройдена: ожидалось " + std::to_string(expectedEntries)
-                           + " entries, получено " + std::to_string(validate.numEntries());
-        return env->NewStringUTF(msg.c_str());
-    }
-
-    g_session.setPendingSave(std::move(out));
-    return nullptr;
+    const char* error = g_saveCoordinator.validateForSave(g_session);
+    return error ? env->NewStringUTF(error) : nullptr;
 }
 
 // Phase 8 (Safe Save), step 2 of 2 -- writes the bytes nativeValidateForSave
