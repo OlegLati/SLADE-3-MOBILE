@@ -9,6 +9,7 @@
 #include "SaveCoordinator.h"
 #include "ArchiveOperations.h"
 #include "ArchiveEntryReader.h"
+#include "ArchivePreview.h"
 #include "Utility/MemChunk.h"
 
 using namespace slade;
@@ -278,6 +279,35 @@ void testArchiveEntryReader()
           "reader returns no palette when archive has none");
 }
 
+void testArchivePreview()
+{
+    std::vector<uint8_t> palette(256 * 3, 0);
+    palette[3] = 255; // palette index 1 = red
+
+    std::vector<uint8_t> flat(64 * 64, 1);
+    const auto pixels = slade_mobile::decodeFlat(flat.data(), static_cast<uint32_t>(flat.size()), palette.data());
+    check(pixels.size() == 64 * 64, "flat preview decodes 64x64 pixels");
+    check(pixels[0] == static_cast<int32_t>(0xFFFF0000u), "flat preview applies palette color");
+
+    std::vector<uint8_t> wav(44, 0);
+    wav[0] = 'R'; wav[1] = 'I'; wav[2] = 'F'; wav[3] = 'F';
+    wav[8] = 'W'; wav[9] = 'A'; wav[10] = 'V'; wav[11] = 'E';
+    wav[12] = 'f'; wav[13] = 'm'; wav[14] = 't'; wav[15] = ' ';
+    putLE32(wav, 16, 16);
+    wav[20] = 1; // PCM
+    wav[22] = 1; // mono
+    putLE32(wav, 24, 8000);
+    putLE32(wav, 28, 8000);
+    wav[32] = 1;
+    wav[34] = 8;
+    wav[36] = 'd'; wav[37] = 'a'; wav[38] = 't'; wav[39] = 'a';
+    putLE32(wav, 40, 0);
+
+    const std::string info = slade_mobile::audioInfoFor("WAV Sound", wav.data(), static_cast<uint32_t>(wav.size()));
+    check(info.find("8000 Hz") != std::string::npos, "WAV preview reports sample rate");
+    check(info.find("PCM") != std::string::npos, "WAV preview reports PCM codec");
+}
+
 void testArchiveSessionPendingSave()
 {
     const auto bytes = makeSingleEntryWad();
@@ -340,6 +370,7 @@ int main()
     testSaveCoordinator();
     testArchiveOperations();
     testArchiveEntryReader();
+    testArchivePreview();
 
     std::cout << "native_wad_tests: PASS\n";
     return 0;
