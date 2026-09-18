@@ -154,34 +154,13 @@ const uint8_t* entryDataPtr(jint index, uint32_t* outSize, ArchiveEntry** outEnt
 // the scenario iwad_lock exists to guard against -- left untouched, so
 // write() can refuse a real IWAD on its own and report why via
 // global::error (checked by the caller).
-bool serializeSession(MemChunk& out, bool allowIwadOverwrite)
+#include "ArchiveSerializer.h"
+
+namespace
 {
-    auto* wad = g_session.archive();
-    auto* mc  = g_session.memChunk();
-
-    for (unsigned i = 0; i < wad->numEntries(); ++i)
-    {
-        auto* entry = wad->entryAt(i);
-        if (!entry || entry->isLoaded() || entry->size() == 0)
-            continue; // already primed, or nothing to copy
-
-        const uint32_t offset = wad->getEntryOffset(entry);
-        const uint32_t size   = entry->size();
-        if (static_cast<uint64_t>(offset) + size <= mc->size())
-            entry->importMem(mc->data() + offset, size);
-        // else: leave unloaded -- write() below still succeeds, just with
-        // this one lump's content missing, rather than failing entirely.
-    }
-
-    if (!allowIwadOverwrite)
-        return wad->write(out); // let iwad_lock refuse on its own if this is a real IWAD
-
-    const bool previousIwadLock = iwad_lock;
-    iwad_lock                   = false;
-    const bool wrote            = wad->write(out);
-    iwad_lock                   = previousIwadLock; // restored on both success and failure
-    return wrote;
+slade_mobile::ArchiveSerializer g_serializer;
 }
+
 
 // Text lumps are, per androidDetectEntryType()'s own check, printable
 // ASCII for at least the first 512 bytes -- but a longer lump isn't
