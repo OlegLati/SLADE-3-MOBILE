@@ -5,9 +5,6 @@
 #include <vector>
 #include <memory>
 
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
 // SLADE convention: every .cpp file includes Main.h FIRST. It's the header
 // that (via common.h) sets up unqualified `string`/`string_view`/etc. via
@@ -23,6 +20,7 @@
 #include "SaveCoordinator.h"
 #include "ArchiveOperations.h"
 #include "ArchiveEntryReader.h"
+#include "FileDescriptorIO.h"
 using namespace slade;
 
 // WadArchive::write() refuses to serialize an IWAD (e.g. DOOM.WAD) at all
@@ -236,42 +234,22 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_openWadFileFd(
     const int fd = static_cast<int>(fdRaw);
     jclass stringClass = env->FindClass("java/lang/String");
 
-    struct stat st{};
-    if (fstat(fd, &st) != 0 || st.st_size <= 0)
-    {
-        close(fd);
-        jobjectArray result = env->NewObjectArray(1, stringClass, nullptr);
-        env->SetObjectArrayElement(result, 0, env->NewStringUTF("ERROR: could not stat file"));
-        return result;
-    }
-
-    const size_t fileSize = static_cast<size_t>(st.st_size);
-    void*        mapped   = mmap(nullptr, fileSize, PROT_READ, MAP_PRIVATE, fd, 0);
-    close(fd); // safe: the mapping (if it succeeded) stays valid regardless
-
-    if (mapped == MAP_FAILED)
+    slade_mobile::MappedFile mapped;
+    if (!slade_mobile::mapReadOnlyFd(fd, mapped))
     {
         jobjectArray result = env->NewObjectArray(1, stringClass, nullptr);
-        env->SetObjectArrayElement(result, 0, env->NewStringUTF("ERROR: mmap failed"));
+        env->SetObjectArrayElement(result, 0, env->NewStringUTF("ERROR: could not map file"));
         return result;
     }
 
     // Drop whatever archive was open before (if any) -- single-session
-    // app, opening a new WAD replaces the old one entirely. g_session.
-    // open() does this internally too (see its own close() call at the
-    // top), but doing it explicitly here first means a failed mmap/stat
-    // above still leaves any previous archive in place rather than tearing
-    // it down before we know the new one is even readable.
-    if (mapped == MAP_FAILED)
-    {
-        // (unreachable in practice -- checked above -- kept only so this
-        // comment block reads top-to-bottom; see the early return above.)
-    }
-
+    // app, opening a new WAD replaces the old one entirely. g_session.open()
+    // performs that lifecycle transition only after the new bytes are
+    // available, so a failed mapping leaves the previous archive intact.
     const bool ok = g_session.open(
-        reinterpret_cast<const unsigned char*>(mapped),
-        static_cast<uint32_t>(fileSize));
-    munmap(mapped, fileSize); // g_session has its own copy now -- the mapping is no longer needed
+        reinterpret_cast<const unsigned char*>(mapped.data),
+        static_cast<uint32_t>(mapped.size));
+    mapped.reset(); // g_session has its own copy now
 
     if (!ok)
     {
@@ -618,20 +596,8 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeSaveToFd(
         return JNI_FALSE;
     }
 
-    const uint8_t* data      = out.data();
-    size_t         remaining = out.size();
-    while (remaining > 0)
-    {
-        const ssize_t written = write(fd, data, remaining);
-        if (written <= 0) // interrupted/error -- no retry-on-EINTR loop needed for a local file fd
-        {
-            close(fd);
-            return JNI_FALSE;
-        }
-        data += written;
-        remaining -= static_cast<size_t>(written);
-    }
-    close(fd);
+    if (!slade_mobile::writeAllAndClose(fd, out.data(), out.size()))
+        return JNI_FALSE;
 
     g_session.clearDirty();
     return JNI_TRUE;
@@ -693,22 +659,12 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeCommitSave(
         return JNI_FALSE;
     }
 
-    MemChunk*      out       = g_session.pendingSave();
-    const uint8_t* data      = out->data();
-    size_t         remaining = out->size();
-    while (remaining > 0)
+    MemChunk* out = g_session.pendingSave();
+    if (!slade_mobile::writeAllAndClose(fd, out->data(), out->size()))
     {
-        const ssize_t written = write(fd, data, remaining);
-        if (written <= 0)
-        {
-            close(fd);
-            g_session.clearPendingSave();
-            return JNI_FALSE;
-        }
-        data += written;
-        remaining -= static_cast<size_t>(written);
+        g_session.clearPendingSave();
+        return JNI_FALSE;
     }
-    close(fd);
 
     g_session.clearPendingSave();
     g_session.clearDirty();
@@ -741,25 +697,10 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeDiscardChanges(
 // WAD, reused here since Add/Replace both just need a picked file's whole
 // contents once, to hand to ArchiveEntry::importMem() (which immediately
 // copies them into its own storage -- the mapping's job ends there).
-const void* mmapWholeFile(int fd, size_t* outSize)
+slade_mobile::MappedFile mapWholeFile(int fd)
 {
-    *outSize = 0;
-
-    struct stat st{};
-    if (fstat(fd, &st) != 0 || st.st_size <= 0)
-    {
-        close(fd);
-        return nullptr;
-    }
-
-    const size_t size   = static_cast<size_t>(st.st_size);
-    void*        mapped = mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd, 0);
-    close(fd); // safe: the mapping (if it succeeded) stays valid regardless -- same reasoning as openWadFileFd()
-
-    if (mapped == MAP_FAILED)
-        return nullptr;
-
-    *outSize = size;
+    slade_mobile::MappedFile mapped;
+    slade_mobile::mapReadOnlyFd(fd, mapped);
     return mapped;
 }
 
@@ -785,20 +726,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeExportEntry(
         return JNI_FALSE;
     }
 
-    size_t remaining = size;
-    while (remaining > 0)
-    {
-        const ssize_t written = write(fd, data, remaining);
-        if (written <= 0)
-        {
-            close(fd);
-            return JNI_FALSE;
-        }
-        data += written;
-        remaining -= static_cast<size_t>(written);
-    }
-    close(fd);
-    return JNI_TRUE;
+    return slade_mobile::writeAllAndClose(fd, data, size) ? JNI_TRUE : JNI_FALSE;
 }
 
 // Adds a brand-new entry named `name` at the end of the archive, with
@@ -823,22 +751,21 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeAddEntry(
         return JNI_FALSE;
     }
 
-    size_t      size = 0;
-    const void* data = mmapWholeFile(fd, &size);
-    if (!data)
+    slade_mobile::MappedFile mapped;
+    if (!slade_mobile::mapReadOnlyFd(fd, mapped))
         return JNI_FALSE;
 
     const char* nameChars = env->GetStringUTFChars(name, nullptr);
     if (!nameChars)
     {
-        munmap(const_cast<void*>(data), size);
+        mapped.reset();
         return JNI_FALSE;
     }
 
     const bool ok = g_archiveOperations.add(
-            g_session, nameChars, data, static_cast<uint32_t>(size));
+            g_session, nameChars, mapped.data, static_cast<uint32_t>(mapped.size));
     env->ReleaseStringUTFChars(name, nameChars);
-    munmap(const_cast<void*>(data), size);
+    mapped.reset();
     return ok ? JNI_TRUE : JNI_FALSE;
 }
 
@@ -860,13 +787,15 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeReplaceEntry(
         return JNI_FALSE;
     }
 
-    size_t      size = 0;
-    const void* data = mmapWholeFile(fd, &size);
-    if (!data)
+    slade_mobile::MappedFile mapped;
+    if (!slade_mobile::mapReadOnlyFd(fd, mapped))
         return JNI_FALSE;
 
     const bool ok = g_archiveOperations.replace(
-            g_session, static_cast<unsigned>(index), data, static_cast<uint32_t>(size));
-    munmap(const_cast<void*>(data), size);
+            g_session,
+            static_cast<unsigned>(index),
+            mapped.data,
+            static_cast<uint32_t>(mapped.size));
+    mapped.reset();
     return ok ? JNI_TRUE : JNI_FALSE;
 }
