@@ -43,3 +43,16 @@ Those require either a small test seam around the native application layer or An
 ## Rule
 
 Every structural extraction should keep this regression slice passing. Expand the slice before changing ownership or save semantics.
+
+## R0.1 ArchiveSession coverage
+
+The native regression target now also covers the extracted `ArchiveSession` layer:
+
+- open/close lifecycle;
+- dirty-state transitions;
+- discard/reparse restoring the original archive state;
+- pending-save ownership and clearing.
+
+The session implementation lives in `app/src/main/cpp/ArchiveSession.h/.cpp` rather than inside the JNI bridge. The JNI bridge keeps only the process-local session instance and delegates lifecycle/state operations to this class.
+
+The test suite still does not exercise Android SAF file descriptors, JNI marshalling, or the Kotlin save flow. Those remain integration-level concerns.
