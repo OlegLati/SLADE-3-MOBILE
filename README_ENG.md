@@ -167,10 +167,11 @@ SLADE_3_MOBILE/
 │   ├── DESIGN.md
 │   ├── ROADMAP.md
 │   ├── TECHNICAL.md
+│   ├── THIRD_PARTY_NOTICES.md
 │   └── REFACTORING.md
-├── THIRD_PARTY_NOTICES.md
 ├── README.md
 ├── README_ENG.md
+├── SECURITY.md
 ├── build.gradle
 └── settings.gradle
 ```
@@ -181,7 +182,7 @@ The repository contains the SLADE source tree and several third-party libraries.
 
 Important license files are intentionally kept with their respective source trees.
 
-See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for the third-party license inventory.
+See [`documents/THIRD_PARTY_NOTICES.md`](documents/THIRD_PARTY_NOTICES.md) for the third-party license inventory.
 
 ## Building
 
@@ -204,6 +205,20 @@ Test on Android device
 ```
 
 Desktop build instructions may be added later if the development workflow expands to additional platforms.
+
+## Installation
+
+1. Open the Releases page.
+2. Download the latest `app-debug.arm64-v8a.apk`.
+3. Install the APK on an ARM64 (`arm64-v8a`) Android device.
+4. Launch SLADE 3 Mobile.
+
+### Requirements
+
+- ARM64 (`arm64-v8a`) Android device.
+- Android API 24 or newer.
+
+This is a debug build intended for testing. Keep backups of important WAD files before editing.
 
 ## Development Workflow
 
@@ -235,7 +250,7 @@ Project documentation is kept in [`documents/`](documents/). Documents in that d
 - [`ROADMAP.md`](documents/ROADMAP.md) — development roadmap and milestones
 - [`TECHNICAL.md`](documents/TECHNICAL.md) — technical stack and implementation details
 - [`REFACTORING.md`](documents/REFACTORING.md) — structural refactoring strategy
-- [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) — third-party software and license inventory
+- [`documents/THIRD_PARTY_NOTICES.md`](documents/THIRD_PARTY_NOTICES.md) — third-party software and license inventory
 
 ## Licensing
 
@@ -248,7 +263,7 @@ The original license and copyright notices for third-party components are preser
 See:
 
 - [`app/src/main/cpp/third_party/SLADE/LICENSE`](app/src/main/cpp/third_party/SLADE/LICENSE)
-- [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)
+- [`documents/THIRD_PARTY_NOTICES.md`](documents/THIRD_PARTY_NOTICES.md)
 
 > **Important:** The overall licensing boundary between project-owned Android code and integrated GPL-covered SLADE code is intentionally not presented here as a single new repository-wide license. The licensing structure should be reviewed before publishing a final distribution under a new overall licensing scheme.
 

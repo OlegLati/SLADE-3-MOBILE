@@ -167,10 +167,11 @@ SLADE_3_MOBILE/
 │   ├── DESIGN.md
 │   ├── ROADMAP.md
 │   ├── TECHNICAL.md
+│   ├── THIRD_PARTY_NOTICES.md
 │   └── REFACTORING.md
-├── THIRD_PARTY_NOTICES.md
 ├── README.md
 ├── README_ENG.md
+├── SECURITY.md
 ├── build.gradle
 └── settings.gradle
 ```
@@ -181,7 +182,7 @@ SLADE_3_MOBILE/
 
 Важные файлы лицензий намеренно хранятся вместе с соответствующими исходными деревьями.
 
-Список сторонних лицензий см. в [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+Список сторонних лицензий см. в [`documents/THIRD_PARTY_NOTICES.md`](documents/THIRD_PARTY_NOTICES.md).
 
 ## Сборка
 
@@ -204,6 +205,20 @@ SLADE_3_MOBILE/
 ```
 
 Инструкции по сборке для настольных систем могут быть добавлены позже, если процесс разработки расширится на другие платформы.
+
+## Установка
+
+1. Откройте страницу Releases.
+2. Скачайте последний файл `app-debug.arm64-v8a.apk`.
+3. Установите APK на Android-устройство с поддержкой ARM64 (`arm64-v8a`).
+4. Запустите SLADE 3 Mobile.
+
+### Требования
+
+- Android-устройство с архитектурой ARM64 (`arm64-v8a`).
+- Android API 24 или новее.
+
+Текущая версия является debug-сборкой и предназначена для тестирования. Перед редактированием рекомендуется создавать резервные копии важных WAD-файлов.
 
 ## Процесс разработки
 
@@ -235,7 +250,7 @@ git switch -c refactor/architecture
 - [`ROADMAP.md`](documents/ROADMAP.md) — дорожная карта разработки и вехи;
 - [`TECHNICAL.md`](documents/TECHNICAL.md) — технический стек и детали реализации;
 - [`REFACTORING.md`](documents/REFACTORING.md) — стратегия структурного рефакторинга;
-- [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) — перечень стороннего ПО и лицензий.
+- [`documents/THIRD_PARTY_NOTICES.md`](documents/THIRD_PARTY_NOTICES.md) — перечень стороннего ПО и лицензий.
 
 ## Лицензирование
 
@@ -248,7 +263,7 @@ SLADE распространяется под лицензией **GNU General P
 См.:
 
 - [`app/src/main/cpp/third_party/SLADE/LICENSE`](app/src/main/cpp/third_party/SLADE/LICENSE)
-- [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)
+- [`documents/THIRD_PARTY_NOTICES.md`](documents/THIRD_PARTY_NOTICES.md)
 
 > **Важно:** общая граница лицензирования между собственным кодом проекта для Android и интегрированным кодом SLADE под GPL намеренно не представлена здесь в виде единой новой лицензии для всего репозитория. Структуру лицензирования следует пересмотреть перед публикацией окончательного дистрибутива под новой общей схемой лицензирования.
 
