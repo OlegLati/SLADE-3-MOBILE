@@ -422,8 +422,8 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryPalette(
 }
 
 // Returns a packed jintArray in the same [width, height, pixels...]
-// convention as getEntryPalette(), decoded via decodeFlat()/
-// decodeDoomGraphic() above. Returns null if: the archive isn't open, the
+// convention as getEntryPalette(), decoded via slade_mobile::decodeFlat()/
+// slade_mobile::decodeDoomGraphic() above. Returns null if: the archive isn't open, the
 // index is invalid, the entry isn't classified as "Flat" or "Doom
 // Graphic", the archive has no usable palette (findPalette() found
 // nothing -- some PWADs genuinely don't carry their own PLAYPAL), or (for
@@ -454,18 +454,18 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryImage(
     {
         // androidDetectEntryType() only returns "Flat" for exactly 4096 or
         // 4160 bytes -- both comfortably cover the 64x64 = 4096 pixels
-        // decodeFlat() reads, so no further size check needed here.
-        std::vector<jint> pixels = decodeFlat(ptr, size, pal);
+        // slade_mobile::decodeFlat() reads, so no further size check needed here.
+        std::vector<jint> pixels = slade_mobile::decodeFlat(ptr, size, pal);
         return packImage(env, 64, 64, pixels);
     }
 
     // Doom Graphic: androidDetectEntryType() already sanity-checked that
     // size >= 8 + 4*width and that the first column offset lands inside
-    // the entry, but decodeDoomGraphic() re-derives width from the header
+    // the entry, but slade_mobile::decodeDoomGraphic() re-derives width from the header
     // itself and bounds-checks every column offset independently, so
     // there's no need to re-validate here.
     int w = 0, h = 0;
-    std::vector<jint> pixels = decodeDoomGraphic(ptr, size, pal, &w, &h);
+    std::vector<jint> pixels = slade_mobile::decodeDoomGraphic(ptr, size, pal, &w, &h);
     return packImage(env, w, h, pixels);
 }
 
@@ -505,7 +505,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryPng(
 }
 
 // Returns a formatted multi-line info string for any of the nine audio
-// lump types androidDetectEntryType() recognizes (see audioInfoFor()
+// lump types androidDetectEntryType() recognizes (see slade_mobile::audioInfoFor()
 // above), or null if the entry isn't audio, the archive isn't open, or
 // the index is invalid. Deliberately info-only, not playback -- see the
 // comment above the parser block for why.
@@ -522,7 +522,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryAudioInfo(
         return nullptr;
 
     const std::string type = androidDetectEntryType(entry->upperName(), size, ptr);
-    const std::string info = audioInfoFor(type, ptr, size);
+    const std::string info = slade_mobile::audioInfoFor(type, ptr, size);
     if (info.empty())
         return nullptr;
 
