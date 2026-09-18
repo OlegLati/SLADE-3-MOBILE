@@ -171,6 +171,7 @@ SLADE_3_MOBILE/
 │   └── REFACTORING.md
 ├── README.md
 ├── README_ENG.md
+├── SECURITY.md
 ├── build.gradle
 └── settings.gradle
 ```
