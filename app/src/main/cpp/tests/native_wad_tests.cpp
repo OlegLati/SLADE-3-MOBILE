@@ -8,6 +8,7 @@
 #include "ArchiveSerializer.h"
 #include "SaveCoordinator.h"
 #include "ArchiveOperations.h"
+#include "ArchiveEntryReader.h"
 #include "Utility/MemChunk.h"
 
 using namespace slade;
@@ -248,6 +249,35 @@ void testArchiveOperations()
           "added entry data survives serialization");
 }
 
+void testArchiveEntryReader()
+{
+    const auto bytes = makeSingleEntryWad();
+    slade_mobile::ArchiveSession session;
+    slade_mobile::ArchiveEntryReader reader;
+
+    check(session.open(bytes.data(), static_cast<uint32_t>(bytes.size())),
+          "session opens for archive entry reader test");
+
+    uint32_t size = 0;
+    slade::ArchiveEntry* entry = nullptr;
+    const uint8_t* data = reader.data(session, 0, &size, &entry);
+    check(data != nullptr, "reader returns entry data");
+    check(size == 4, "reader returns entry size");
+    check(entry != nullptr && entry->name() == "TEST", "reader returns entry");
+    check(data[0] == 'A' && data[3] == 'D', "reader returns original bytes");
+
+    const char replacement[] = "XYZ";
+    slade_mobile::ArchiveOperations operations;
+    check(operations.replace(session, 0, replacement, 3),
+          "reader test replaces entry");
+    data = reader.data(session, 0, &size, &entry);
+    check(data != nullptr && size == 3, "reader returns replaced entry");
+    check(data[0] == 'X' && data[2] == 'Z', "reader returns modified bytes");
+
+    check(reader.findPalette(session, &size) == nullptr,
+          "reader returns no palette when archive has none");
+}
+
 void testArchiveSessionPendingSave()
 {
     const auto bytes = makeSingleEntryWad();
@@ -309,6 +339,7 @@ int main()
     testArchiveSerializer();
     testSaveCoordinator();
     testArchiveOperations();
+    testArchiveEntryReader();
 
     std::cout << "native_wad_tests: PASS\n";
     return 0;
