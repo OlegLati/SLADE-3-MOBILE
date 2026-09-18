@@ -5,6 +5,7 @@
 
 #include "Archive/Formats/WadArchive.h"
 #include "ArchiveSession.h"
+#include "ArchiveSerializer.h"
 #include "Utility/MemChunk.h"
 
 using namespace slade;
@@ -135,6 +136,26 @@ void testArchiveSessionLifecycle()
     check(!session.isOpen(), "close shuts session");
 }
 
+void testArchiveSerializer()
+{
+    const auto bytes = makeSingleEntryWad();
+    slade_mobile::ArchiveSession session;
+    check(session.open(bytes.data(), static_cast<uint32_t>(bytes.size())), "session opens for serializer test");
+
+    auto* entry = session.archive()->entryAt(0);
+    check(entry != nullptr, "serializer test entry exists");
+    check(session.archive()->renameEntry(entry, "SERIAL"), "rename before serialization");
+
+    slade::MemChunk serialized;
+    slade_mobile::ArchiveSerializer serializer;
+    check(serializer.serialize(session, serialized, true), "serializer writes modified WAD");
+
+    slade::WadArchive reopened;
+    check(reopened.open(serialized), "serializer output reopens");
+    check(reopened.numEntries() == 1, "serializer output has one entry");
+    check(reopened.entryAt(0)->name() == "SERIAL", "serializer preserves renamed entry");
+}
+
 void testArchiveSessionPendingSave()
 {
     const auto bytes = makeSingleEntryWad();
@@ -193,6 +214,7 @@ int main()
     testAddAndSerialize();
     testArchiveSessionLifecycle();
     testArchiveSessionPendingSave();
+    testArchiveSerializer();
 
     std::cout << "native_wad_tests: PASS\n";
     return 0;
