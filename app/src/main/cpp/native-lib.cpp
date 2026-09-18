@@ -1455,7 +1455,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeAddEntry(
 
     const int fd = static_cast<int>(fdRaw);
 
-    if (!g_session.isOpen())
+    if (!g_session.isOpen() || !name)
     {
         close(fd);
         return JNI_FALSE;
@@ -1467,25 +1467,22 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeAddEntry(
         return JNI_FALSE;
 
     const char* nameChars = env->GetStringUTFChars(name, nullptr);
-    auto        entry     = std::make_shared<ArchiveEntry>(nameChars, static_cast<uint32_t>(size));
+    if (!nameChars)
+    {
+        munmap(const_cast<void*>(data), size);
+        return JNI_FALSE;
+    }
+
+    const bool ok = g_archiveOperations.add(
+            g_session, nameChars, data, static_cast<uint32_t>(size));
     env->ReleaseStringUTFChars(name, nameChars);
-
-    entry->importMem(data, static_cast<uint32_t>(size));
     munmap(const_cast<void*>(data), size);
-
-    auto*      wad = g_session.archive();
-    const bool ok  = static_cast<bool>(wad->addEntry(entry, wad->numEntries(), nullptr));
-    if (ok)
-        g_session.markDirty();
     return ok ? JNI_TRUE : JNI_FALSE;
 }
 
-// Replaces the entry at `index`'s content in place (name and position
-// unchanged) with `fd`'s whole contents -- same read source/contract as
-// addEntry() above. ArchiveEntry::importMem() updates the entry's size to
-// match automatically; nothing else needs to be told about the new size
-// (entryDataPtr()/buildEntryListArray() pick it up next time they read
-// this entry, via the isLoaded() check added alongside this function).
+// Replaces the entry at index using the selected file's whole contents.
+// mmap/SAF fd ownership remains in JNI; the archive-domain mutation itself
+// is delegated to ArchiveOperations.
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_oleglati_slade_13_1mobile_SladeNative_nativeReplaceEntry(
         JNIEnv* env,
@@ -1501,23 +1498,13 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeReplaceEntry(
         return JNI_FALSE;
     }
 
-    auto* wad   = g_session.archive();
-    auto* entry = wad->entryAt(static_cast<unsigned>(index));
-    if (!entry)
-    {
-        close(fd);
-        return JNI_FALSE;
-    }
-
     size_t      size = 0;
     const void* data = mmapWholeFile(fd, &size);
     if (!data)
         return JNI_FALSE;
 
-    const bool ok = entry->importMem(data, static_cast<uint32_t>(size));
+    const bool ok = g_archiveOperations.replace(
+            g_session, static_cast<unsigned>(index), data, static_cast<uint32_t>(size));
     munmap(const_cast<void*>(data), size);
-
-    if (ok)
-        g_session.markDirty();
     return ok ? JNI_TRUE : JNI_FALSE;
 }
