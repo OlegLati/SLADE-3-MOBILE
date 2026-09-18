@@ -48,6 +48,7 @@ add_library(slade_core STATIC
         ${CMAKE_CURRENT_SOURCE_DIR}/SaveCoordinator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ArchiveOperations.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ArchiveEntryReader.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/ArchivePreview.cpp
 )
 
 target_include_directories(slade_core PUBLIC
