@@ -4,6 +4,11 @@
 #include "Archive/Formats/WadArchive.h"
 #include "Utility/MemChunk.h"
 
+namespace slade
+{
+std::string androidDetectEntryType(std::string_view upperName, uint32_t size, const uint8_t* data);
+}
+
 namespace slade_mobile
 {
 const uint8_t* ArchiveEntryReader::data(ArchiveSession& session, unsigned index,
