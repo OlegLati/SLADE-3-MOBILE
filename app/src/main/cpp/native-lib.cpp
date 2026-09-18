@@ -18,8 +18,6 @@
 
 #include "Archive/Formats/WadArchive.h"
 #include "Utility/MemChunk.h"
-#include "General/CVar.h"
-
 using namespace slade;
 
 // WadArchive::write() refuses to serialize an IWAD (e.g. DOOM.WAD) at all
@@ -28,8 +26,6 @@ using namespace slade;
 // WadArchive.cpp) the same way WadJArchive.cpp does it, so saveToFd() can
 // toggle it off for the one call where it doesn't apply -- see the
 // comment there for why.
-EXTERN_CVAR(Bool, iwad_lock)
-
 // Defined in compat/slade_shims.cpp -- a real (not EntryType-based) byte-
 // signature + name classifier. Takes the entry's uppercase name, size, and
 // a raw pointer to its bytes directly, rather than an ArchiveEntry& --
@@ -1298,7 +1294,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeSaveToFd(
     // through), so iwad_lock's protection against clobbering a real IWAD
     // in place doesn't apply to this code path.
     MemChunk out;
-    if (!serializeSession(out, /*allowIwadOverwrite=*/true))
+    if (!g_serializer.serialize(g_session, out, /*allowIwadOverwrite=*/true))
     {
         close(fd);
         return JNI_FALSE;
@@ -1358,7 +1354,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeValidateForSave(
     const unsigned expectedEntries = wad->numEntries();
 
     auto out = std::make_unique<MemChunk>();
-    if (!serializeSession(*out, /*allowIwadOverwrite=*/false))
+    if (!g_serializer.serialize(g_session, *out, /*allowIwadOverwrite=*/false))
         return env->NewStringUTF(global::error.c_str());
 
     // Validation: re-parse the just-serialized bytes as an independent
