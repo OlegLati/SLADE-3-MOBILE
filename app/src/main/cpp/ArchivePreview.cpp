@@ -14,17 +14,17 @@ namespace slade_mobile
 // 4096 (classic 64x64) or 4160 (Heretic/Hexen animated liquid flats, 64x64
 // plus 64 trailing bytes of engine-specific data that isn't part of the
 // pixel grid) as "Flat", so 64x64 read from the front covers both cases.
-std::vector<jint> decodeFlat(const uint8_t* data, uint32_t /* size */, const uint8_t* pal)
+std::vector<int32_t> decodeFlat(const uint8_t* data, uint32_t /* size */, const uint8_t* pal)
 {
     constexpr int kDim = 64;
-    std::vector<jint> pixels(static_cast<size_t>(kDim) * kDim);
+    std::vector<int32_t> pixels(static_cast<size_t>(kDim) * kDim);
     for (int i = 0; i < kDim * kDim; ++i)
     {
         const uint8_t idx = data[i];
         const uint8_t r   = pal[idx * 3 + 0];
         const uint8_t g   = pal[idx * 3 + 1];
         const uint8_t b   = pal[idx * 3 + 2];
-        pixels[i] = static_cast<jint>(0xFF000000u | (static_cast<uint32_t>(r) << 16)
+        pixels[i] = static_cast<int32_t>(0xFF000000u | (static_cast<uint32_t>(r) << 16)
                                        | (static_cast<uint32_t>(g) << 8) | static_cast<uint32_t>(b));
     }
     return pixels;
@@ -46,12 +46,12 @@ std::vector<jint> decodeFlat(const uint8_t* data, uint32_t /* size */, const uin
 // decode, not the "tall patch" (DeepSea) variant some newer source ports
 // support for patches taller than 254px -- fine for the vanilla-range
 // IWADs/PWADs this app has been validated against so far.
-std::vector<jint> decodeDoomGraphic(const uint8_t* data, uint32_t size, const uint8_t* pal, int* outW, int* outH)
+std::vector<int32_t> decodeDoomGraphic(const uint8_t* data, uint32_t size, const uint8_t* pal, int* outW, int* outH)
 {
     const uint16_t width  = static_cast<uint16_t>(data[0] | (data[1] << 8));
     const uint16_t height = static_cast<uint16_t>(data[2] | (data[3] << 8));
 
-    std::vector<jint> pixels(static_cast<size_t>(width) * height, 0); // transparent by default
+    std::vector<int32_t> pixels(static_cast<size_t>(width) * height, 0); // transparent by default
 
     for (uint16_t col = 0; col < width; ++col)
     {
@@ -85,7 +85,7 @@ std::vector<jint> decodeDoomGraphic(const uint8_t* data, uint32_t size, const ui
                 const uint8_t r   = pal[idx * 3 + 0];
                 const uint8_t g   = pal[idx * 3 + 1];
                 const uint8_t b   = pal[idx * 3 + 2];
-                pixels[static_cast<size_t>(row) * width + col] = static_cast<jint>(
+                pixels[static_cast<size_t>(row) * width + col] = static_cast<int32_t>(
                         0xFF000000u | (static_cast<uint32_t>(r) << 16) | (static_cast<uint32_t>(g) << 8)
                         | static_cast<uint32_t>(b));
             }
