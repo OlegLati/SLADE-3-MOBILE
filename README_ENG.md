@@ -205,6 +205,20 @@ Test on Android device
 
 Desktop build instructions may be added later if the development workflow expands to additional platforms.
 
+## Installation
+
+1. Open the Releases page.
+2. Download the latest `app-debug.arm64-v8a.apk`.
+3. Install the APK on an ARM64 (`arm64-v8a`) Android device.
+4. Launch SLADE 3 Mobile.
+
+### Requirements
+
+- ARM64 (`arm64-v8a`) Android device.
+- Android API 24 or newer.
+
+This is a debug build intended for testing. Keep backups of important WAD files before editing.
+
 ## Development Workflow
 
 Git is used to keep the project recoverable while the architecture is being refactored.
