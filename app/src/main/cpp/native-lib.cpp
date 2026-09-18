@@ -68,6 +68,11 @@ std::string androidDetectEntryType(std::string_view upperName, uint32_t size, co
 // -----------------------------------------------------------------------
 #include "ArchiveSession.h"
 
+namespace
+{
+slade_mobile::ArchiveSession g_session;
+}
+
 // entryDataPtr() through audioInfoFor() below are internal helpers only
 // ever called from this file's own JNIEXPORT functions -- anonymous
 // namespace for internal linkage, same pattern as ArchiveSession's own
