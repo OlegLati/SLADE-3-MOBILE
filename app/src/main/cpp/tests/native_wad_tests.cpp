@@ -4,6 +4,7 @@
 #include <string>
 
 #include "Archive/Formats/WadArchive.h"
+#include "ArchiveSession.h"
 #include "Utility/MemChunk.h"
 
 using namespace slade;
@@ -110,6 +111,49 @@ void testSerializeAndReopen()
     check(renamed->name() == "RENAMED", "renamed entry survived serialization");
 }
 
+void testArchiveSessionLifecycle()
+{
+    const auto bytes = makeSingleEntryWad();
+    slade_mobile::ArchiveSession session;
+
+    check(!session.isOpen(), "new session is closed");
+    check(session.open(bytes.data(), static_cast<uint32_t>(bytes.size())), "session opens WAD");
+    check(session.isOpen(), "session reports open");
+    check(!session.isDirty(), "fresh session is clean");
+
+    auto* entry = session.archive()->entryAt(0);
+    check(entry != nullptr, "session entry exists");
+    check(session.archive()->renameEntry(entry, "CHANGED"), "rename through session archive");
+    session.markDirty();
+    check(session.isDirty(), "session reports dirty after edit");
+
+    check(session.discardChanges(), "discard changes succeeds");
+    check(!session.isDirty(), "discard clears dirty state");
+    check(session.archive()->entryAt(0)->name() == "TEST", "discard restores original entry");
+
+    session.close();
+    check(!session.isOpen(), "close shuts session");
+}
+
+void testArchiveSessionPendingSave()
+{
+    const auto bytes = makeSingleEntryWad();
+    slade_mobile::ArchiveSession session;
+    check(session.open(bytes.data(), static_cast<uint32_t>(bytes.size())), "session opens for pending save test");
+    check(!session.hasPendingSave(), "session starts without pending save");
+
+    auto pending = std::make_unique<MemChunk>();
+    check(pending->importMem(bytes.data(), static_cast<uint32_t>(bytes.size())), "prepare pending save");
+    session.setPendingSave(std::move(pending));
+    check(session.hasPendingSave(), "pending save is stored");
+    check(session.pendingSave() != nullptr, "pending save is accessible");
+
+    session.clearPendingSave();
+    check(!session.hasPendingSave(), "pending save can be cleared");
+
+    session.close();
+}
+
 void testAddAndSerialize()
 {
     const auto bytes = makeSingleEntryWad();
@@ -147,6 +191,8 @@ int main()
     testRejectTruncatedWad();
     testSerializeAndReopen();
     testAddAndSerialize();
+    testArchiveSessionLifecycle();
+    testArchiveSessionPendingSave();
 
     std::cout << "native_wad_tests: PASS\n";
     return 0;
