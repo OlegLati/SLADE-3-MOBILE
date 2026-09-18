@@ -7,6 +7,7 @@
 #include "ArchiveSession.h"
 #include "ArchiveSerializer.h"
 #include "SaveCoordinator.h"
+#include "ArchiveOperations.h"
 #include "Utility/MemChunk.h"
 
 using namespace slade;
@@ -185,6 +186,30 @@ void testSaveCoordinator()
           "validated output preserves modified entry");
 }
 
+void testArchiveOperations()
+{
+    const auto bytes = makeSingleEntryWad();
+    slade_mobile::ArchiveSession session;
+    slade_mobile::ArchiveOperations operations;
+
+    check(session.open(bytes.data(), static_cast<uint32_t>(bytes.size())),
+          "session opens for archive operations test");
+
+    check(operations.rename(session, 0, "EDITED"), "ArchiveOperations rename succeeds");
+    check(session.isDirty(), "rename marks session dirty");
+    check(session.archive()->entryAt(0)->name() == "EDITED",
+          "rename changes entry name");
+
+    session.clearDirty();
+    check(operations.move(session, 0, 0), "ArchiveOperations move succeeds");
+    check(session.isDirty(), "move marks session dirty");
+
+    session.clearDirty();
+    check(operations.remove(session, 0), "ArchiveOperations remove succeeds");
+    check(session.isDirty(), "remove marks session dirty");
+    check(session.archive()->numEntries() == 0, "remove deletes the entry");
+}
+
 void testArchiveSessionPendingSave()
 {
     const auto bytes = makeSingleEntryWad();
@@ -245,6 +270,7 @@ int main()
     testArchiveSessionPendingSave();
     testArchiveSerializer();
     testSaveCoordinator();
+    testArchiveOperations();
 
     std::cout << "native_wad_tests: PASS\n";
     return 0;
