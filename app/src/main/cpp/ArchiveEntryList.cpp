@@ -6,7 +6,7 @@
 
 namespace slade_mobile
 {
-jobjectArray buildEntryListArray(JNIEnv* env)
+jobjectArray buildEntryListArray(JNIEnv* env, ArchiveSession& session)
 {
     jclass stringClass = env->FindClass("java/lang/String");
 
