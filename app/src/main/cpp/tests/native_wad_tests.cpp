@@ -10,7 +10,6 @@
 #include "ArchiveOperations.h"
 #include "ArchiveEntryReader.h"
 #include "ArchivePreview.h"
-#include "ArchiveEntryList.h"
 #include "Utility/MemChunk.h"
 
 using namespace slade;
@@ -278,15 +277,6 @@ void testArchiveEntryReader()
 
     check(reader.findPalette(session, &size) == nullptr,
           "reader returns no palette when archive has none");
-}
-
-void testArchiveEntryList()
-{
-    const auto bytes = makeSingleEntryWad();
-    slade_mobile::ArchiveSession session;
-    check(session.open(bytes.data(), static_cast<uint32_t>(bytes.size())), "session opens for entry list test");
-    jobjectArray unused = nullptr;
-    (void)unused;
 }
 
 void testArchivePreview()
