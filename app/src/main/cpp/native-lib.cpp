@@ -225,53 +225,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_stringFromJNI(
 // Kotlin-side adapter to reload from scratch rather than patch its cached
 // list locally, since removeEntry() shifts every later index down by one).
 // Assumes g_session is already open; callers are responsible for that.
-jobjectArray buildEntryListArray(JNIEnv* env)
-{
-    jclass stringClass = env->FindClass("java/lang/String");
-
-    auto*    wad   = g_session.archive();
-    auto*    mc    = g_session.memChunk();
-    unsigned count = wad->numEntries();
-    jobjectArray result = env->NewObjectArray(static_cast<jsize>(count), stringClass, nullptr);
-
-    for (unsigned i = 0; i < count; ++i)
-    {
-        auto* entry = wad->entryAt(i);
-
-        std::ostringstream line;
-        if (entry)
-        {
-            const uint32_t size = entry->size();
-            const uint8_t* ptr  = nullptr;
-            // Phase 7 (Export/Import/Replace): same isLoaded()-first check
-            // as g_entryReader.data(g_session, ) -- a replaced entry's real current bytes
-            // live in entry->rawData(), not at its old offset in mc. See
-            // g_entryReader.data(g_session, )'s comment for the full reasoning.
-            if (entry->isLoaded())
-            {
-                if (size > 0)
-                    ptr = entry->rawData(false);
-            }
-            else
-            {
-                const uint32_t offset = wad->getEntryOffset(entry);
-                if (size > 0 && static_cast<uint64_t>(offset) + size <= mc->size())
-                    ptr = mc->data() + offset;
-            }
-
-            line << entry->name() << "\t" << size << "\t" << androidDetectEntryType(entry->upperName(), size, ptr);
-        }
-        else
-            line << "?\t0\t?";
-
-        env->SetObjectArrayElement(
-            result,
-            static_cast<jsize>(i),
-            env->NewStringUTF(line.str().c_str()));
-    }
-
-    return result;
-}
+#include "ArchiveEntryList.h"
 
 extern "C" JNIEXPORT jobjectArray JNICALL
 Java_com_oleglati_slade_13_1mobile_SladeNative_openWadFileFd(
