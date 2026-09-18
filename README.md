@@ -167,8 +167,8 @@ SLADE_3_MOBILE/
 │   ├── DESIGN.md
 │   ├── ROADMAP.md
 │   ├── TECHNICAL.md
+│   ├── THIRD_PARTY_NOTICES.md
 │   └── REFACTORING.md
-├── documents/THIRD_PARTY_NOTICES.md
 ├── README.md
 ├── README_ENG.md
 ├── build.gradle
