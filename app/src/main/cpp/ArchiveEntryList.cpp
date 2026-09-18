@@ -4,6 +4,12 @@
 
 #include <sstream>
 
+namespace slade
+{
+std::string androidDetectEntryType(std::string_view upperName, uint32_t size, const uint8_t* data);
+}
+
+
 namespace slade_mobile
 {
 jobjectArray buildEntryListArray(JNIEnv* env, ArchiveSession& session)
