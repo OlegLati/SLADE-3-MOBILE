@@ -168,7 +168,7 @@ SLADE_3_MOBILE/
 │   ├── ROADMAP.md
 │   ├── TECHNICAL.md
 │   └── REFACTORING.md
-├── THIRD_PARTY_NOTICES.md
+├── documents/THIRD_PARTY_NOTICES.md
 ├── README.md
 ├── README_ENG.md
 ├── build.gradle
@@ -181,7 +181,7 @@ The repository contains the SLADE source tree and several third-party libraries.
 
 Important license files are intentionally kept with their respective source trees.
 
-See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for the third-party license inventory.
+See [`documents/THIRD_PARTY_NOTICES.md`](documents/THIRD_PARTY_NOTICES.md) for the third-party license inventory.
 
 ## Building
 
@@ -249,7 +249,7 @@ Project documentation is kept in [`documents/`](documents/). Documents in that d
 - [`ROADMAP.md`](documents/ROADMAP.md) — development roadmap and milestones
 - [`TECHNICAL.md`](documents/TECHNICAL.md) — technical stack and implementation details
 - [`REFACTORING.md`](documents/REFACTORING.md) — structural refactoring strategy
-- [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) — third-party software and license inventory
+- [`documents/THIRD_PARTY_NOTICES.md`](documents/THIRD_PARTY_NOTICES.md) — third-party software and license inventory
 
 ## Licensing
 
@@ -262,7 +262,7 @@ The original license and copyright notices for third-party components are preser
 See:
 
 - [`app/src/main/cpp/third_party/SLADE/LICENSE`](app/src/main/cpp/third_party/SLADE/LICENSE)
-- [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)
+- [`documents/THIRD_PARTY_NOTICES.md`](documents/THIRD_PARTY_NOTICES.md)
 
 > **Important:** The overall licensing boundary between project-owned Android code and integrated GPL-covered SLADE code is intentionally not presented here as a single new repository-wide license. The licensing structure should be reviewed before publishing a final distribution under a new overall licensing scheme.
 
