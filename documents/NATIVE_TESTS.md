@@ -75,3 +75,17 @@ The Safe Save validation step is now isolated in `app/src/main/cpp/SaveCoordinat
 The JNI bridge now delegates `nativeValidateForSave()` to `SaveCoordinator`. The actual Android file-descriptor write in `nativeCommitSave()` remains in the JNI bridge deliberately: SAF/FD ownership is an Android integration concern, while the coordinator owns the serialization/reparse validation step.
 
 Save/Save As behavior is therefore unchanged by the extraction. Manual verification also confirms that both paths continue to work correctly after the refactor.
+
+## R0.5 — ArchivePreview extraction
+
+The native preview/format-parsing domain logic was extracted from `native-lib.cpp` into `ArchivePreview.cpp/.h`.
+
+Covered responsibilities:
+- Flat 64×64 palette decoding;
+- Doom Graphic patch decoding;
+- audio metadata parsing for WAV, DMX Sound, PC Speaker, MIDI, MUS, GENMIDI, FLAC, MP3 and OGG;
+- preview parser dispatch independent of JNI.
+
+JNI remains responsible for Android-facing conversion such as `jintArray` / `jbyteArray` / `jstring`. Regression coverage now includes Flat palette decoding and WAV metadata parsing.
+
+Manual Android build/run is still required after this extraction because the test target does not exercise JNI bindings or Kotlin integration.
