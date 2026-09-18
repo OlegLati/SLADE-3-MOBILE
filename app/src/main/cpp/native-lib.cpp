@@ -697,13 +697,6 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeDiscardChanges(
 // WAD, reused here since Add/Replace both just need a picked file's whole
 // contents once, to hand to ArchiveEntry::importMem() (which immediately
 // copies them into its own storage -- the mapping's job ends there).
-slade_mobile::MappedFile mapWholeFile(int fd)
-{
-    slade_mobile::MappedFile mapped;
-    slade_mobile::mapReadOnlyFd(fd, mapped);
-    return mapped;
-}
-
 // Exports the entry at `index`'s current bytes to `fd` (a SAF
 // ACTION_CREATE_DOCUMENT result, same "rwt"/detachFd() contract as
 // saveToFd()). Uses g_entryReader.data(g_session, ) -- NOT a raw offset lookup -- so
