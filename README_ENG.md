@@ -250,7 +250,7 @@ Project documentation is kept in [`documents/`](documents/). Documents in that d
 - [`ROADMAP.md`](documents/ROADMAP.md) — development roadmap and milestones
 - [`TECHNICAL.md`](documents/TECHNICAL.md) — technical stack and implementation details
 - [`REFACTORING.md`](documents/REFACTORING.md) — structural refactoring strategy
-- [`documents/THIRD_PARTY_NOTICES.md`](documents/THIRD_PARTY_NOTICES.md) — third-party software and license inventory
+- [`THIRD_PARTY_NOTICES.md`](documents/THIRD_PARTY_NOTICES.md) — third-party software and license inventory
 
 ## Licensing
 
