@@ -22,6 +22,7 @@
 #include "ArchiveSerializer.h"
 #include "SaveCoordinator.h"
 #include "ArchiveOperations.h"
+#include "ArchiveEntryReader.h"
 using namespace slade;
 
 // WadArchive::write() refuses to serialize an IWAD (e.g. DOOM.WAD) at all
@@ -71,69 +72,6 @@ namespace
 slade_mobile::ArchiveSession g_session;
 }
 
-// entryDataPtr() through audioInfoFor() below are internal helpers only
-// ever called from this file's own JNIEXPORT functions -- anonymous
-// namespace for internal linkage, same pattern as ArchiveSession's own
-// namespace block just above. (This opening brace was missing -- left
-// orphaned by whatever pass introduced ArchiveSession as its own separate
-// namespace block above; the closing "} // namespace" for *this* block
-// was already sitting right before audioInfoFor()'s callers, just with
-// nothing above it to match. Compiler caught it as an "extraneous closing
-// brace" rather than an unclosed one because everything from here down
-// happened to still parse as valid top-level declarations on its own.)
-namespace
-{
-
-// Looks up an entry by index in the currently-open session and returns a
-// raw pointer to its bytes, bounds-checked. Returns nullptr on any
-// failure -- no archive open, bad index, or (for an unmodified entry) an
-// offset/size that doesn't fit inside the session's MemChunk. Shared by
-// every "get entry content" JNI function so the bounds-check logic lives
-// in exactly one place.
-//
-// Phase 7 (Export/Import/Replace): checks entry->isLoaded() FIRST and
-// returns entry->rawData() in that case, rather than always reading from
-// the session's MemChunk by offset. Entries only ever become "loaded"
-// here via importMem() -- either Replace overwriting an existing entry's
-// content, Add creating a brand new one (which has no offset into the
-// original file at all), or saveToFd()'s own priming pass. For any of
-// those, reading from the original MemChunk by offset would return
-// stale/original bytes (Replace) or garbage/out-of-range data (Add) --
-// only entries nobody has touched yet should fall through to the
-// original offset-based read below.
-const uint8_t* entryDataPtr(jint index, uint32_t* outSize, ArchiveEntry** outEntry = nullptr)
-{
-    if (!g_session.isOpen() || index < 0)
-        return nullptr;
-
-    auto* wad = g_session.archive();
-    auto* mc  = g_session.memChunk();
-
-    auto* entry = wad->entryAt(static_cast<unsigned>(index));
-    if (!entry)
-        return nullptr;
-
-    if (outEntry)
-        *outEntry = entry;
-
-    if (entry->isLoaded())
-    {
-        const uint32_t size = entry->size();
-        if (size == 0)
-            return nullptr;
-        *outSize = size;
-        return entry->rawData(false); // false: never trigger loadEntryData() -- see file header comment on why that always fails here anyway
-    }
-
-    const uint32_t offset = wad->getEntryOffset(entry);
-    const uint32_t size   = entry->size();
-    if (size == 0 || static_cast<uint64_t>(offset) + size > mc->size())
-        return nullptr;
-
-    *outSize = size;
-    return mc->data() + offset;
-}
-
 // Phase 7/8 shared helper: primes every entry's data (see the long-
 // standing "IMPORTANT" file-header comment and nativeSaveToFd's own
 // comment for why rawData()/loadEntryData() can't be trusted here) and
@@ -157,6 +95,7 @@ namespace
 slade_mobile::ArchiveSerializer g_serializer;
 slade_mobile::SaveCoordinator g_saveCoordinator;
 slade_mobile::ArchiveOperations g_archiveOperations;
+slade_mobile::ArchiveEntryReader g_entryReader;
 }
 
 
@@ -185,67 +124,6 @@ std::string sanitizeAscii(const uint8_t* data, uint32_t len)
 }
 
 // -----------------------------------------------------------------------
-// Doom Graphic/Flat decoding needs a palette to turn indexed bytes into
-// actual colors -- neither lump carries one itself. Scans the currently-
-// open archive for PLAYPAL (exact name match preferred; falls back to the
-// first entry androidDetectEntryType() calls "Palette", e.g. a Heretic
-// E2PAL, if a PWAD happens not to include its own PLAYPAL). Deliberately
-// reuses only the entryAt()/numEntries()/getEntryOffset() calls already
-// proven to compile elsewhere in this file, rather than reaching for an
-// unconfirmed find-by-name API on WadArchive/Archive -- see HANDOFF
-// learning #6 ("don't guess at signatures").
-//
-// Only the first 768 bytes (palette 0 -- the normal, undamaged palette)
-// of whatever's found are used; PLAYPAL packs 14 palettes back-to-back
-// for damage/berserk/radiation flashes, but a static content-preview
-// dialog has no notion of "current game state" to pick among them.
-const uint8_t* findPalette(uint32_t* outSize)
-{
-    if (!g_session.isOpen())
-        return nullptr;
-
-    auto* wad = g_session.archive();
-    auto* mc  = g_session.memChunk();
-
-    const unsigned count            = wad->numEntries();
-    const uint8_t* fallbackPtr       = nullptr;
-    uint32_t       fallbackSize      = 0;
-
-    for (unsigned i = 0; i < count; ++i)
-    {
-        auto* e = wad->entryAt(i);
-        if (!e)
-            continue;
-
-        const uint32_t offset = wad->getEntryOffset(e);
-        const uint32_t size   = e->size();
-        if (size < 768 || static_cast<uint64_t>(offset) + size > mc->size())
-            continue;
-
-        const uint8_t* ptr = mc->data() + offset;
-        if (androidDetectEntryType(e->upperName(), size, ptr) != "Palette")
-            continue;
-
-        if (e->upperName() == "PLAYPAL")
-        {
-            *outSize = size;
-            return ptr;
-        }
-        if (!fallbackPtr)
-        {
-            fallbackPtr  = ptr;
-            fallbackSize = size;
-        }
-    }
-
-    if (fallbackPtr)
-    {
-        *outSize = fallbackSize;
-        return fallbackPtr;
-    }
-    return nullptr;
-}
-
 // Packs [width, height, pixel0, pixel1, ...] into a jintArray -- the same
 // convention getEntryPalette() already uses, so the Kotlin side can share
 // one unpacking code path for palettes, flats, and graphics alike.
@@ -836,9 +714,9 @@ jobjectArray buildEntryListArray(JNIEnv* env)
             const uint32_t size = entry->size();
             const uint8_t* ptr  = nullptr;
             // Phase 7 (Export/Import/Replace): same isLoaded()-first check
-            // as entryDataPtr() -- a replaced entry's real current bytes
+            // as g_entryReader.data(g_session, ) -- a replaced entry's real current bytes
             // live in entry->rawData(), not at its old offset in mc. See
-            // entryDataPtr()'s comment for the full reasoning.
+            // g_entryReader.data(g_session, )'s comment for the full reasoning.
             if (entry->isLoaded())
             {
                 if (size > 0)
@@ -946,7 +824,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryText(
 
     uint32_t        size = 0;
     ArchiveEntry*    entry = nullptr;
-    const uint8_t*   ptr  = entryDataPtr(index, &size, &entry);
+    const uint8_t*   ptr  = g_entryReader.data(g_session, index, &size, &entry);
     if (!ptr)
         return nullptr;
 
@@ -979,7 +857,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryPalette(
 
     uint32_t       size  = 0;
     ArchiveEntry*  entry = nullptr;
-    const uint8_t* ptr   = entryDataPtr(index, &size, &entry);
+    const uint8_t* ptr   = g_entryReader.data(g_session, index, &size, &entry);
     if (!ptr)
         return nullptr;
 
@@ -1029,7 +907,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryImage(
 
     uint32_t       size  = 0;
     ArchiveEntry*  entry = nullptr;
-    const uint8_t* ptr   = entryDataPtr(index, &size, &entry);
+    const uint8_t* ptr   = g_entryReader.data(g_session, index, &size, &entry);
     if (!ptr)
         return nullptr;
 
@@ -1038,7 +916,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryImage(
         return nullptr;
 
     uint32_t       palSize = 0;
-    const uint8_t* pal     = findPalette(&palSize);
+    const uint8_t* pal     = g_entryReader.findPalette(g_session, &palSize);
     if (!pal)
         return nullptr; // no PLAYPAL (or equivalent) anywhere in this archive
 
@@ -1078,7 +956,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryPng(
 
     uint32_t       size  = 0;
     ArchiveEntry*  entry = nullptr;
-    const uint8_t* ptr   = entryDataPtr(index, &size, &entry);
+    const uint8_t* ptr   = g_entryReader.data(g_session, index, &size, &entry);
     if (!ptr)
         return nullptr;
 
@@ -1109,7 +987,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryAudioInfo(
 
     uint32_t       size  = 0;
     ArchiveEntry*  entry = nullptr;
-    const uint8_t* ptr   = entryDataPtr(index, &size, &entry);
+    const uint8_t* ptr   = g_entryReader.data(g_session, index, &size, &entry);
     if (!ptr)
         return nullptr;
 
@@ -1403,7 +1281,7 @@ const void* mmapWholeFile(int fd, size_t* outSize)
 
 // Exports the entry at `index`'s current bytes to `fd` (a SAF
 // ACTION_CREATE_DOCUMENT result, same "rwt"/detachFd() contract as
-// saveToFd()). Uses entryDataPtr() -- NOT a raw offset lookup -- so
+// saveToFd()). Uses g_entryReader.data(g_session, ) -- NOT a raw offset lookup -- so
 // exporting a just-Replaced-but-not-yet-saved entry exports its NEW
 // content, not what used to be on disk.
 extern "C" JNIEXPORT jboolean JNICALL
@@ -1416,7 +1294,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeExportEntry(
     const int fd = static_cast<int>(fdRaw);
 
     uint32_t       size = 0;
-    const uint8_t* data = entryDataPtr(index, &size);
+    const uint8_t* data = g_entryReader.data(g_session, index, &size);
     if (!data)
     {
         close(fd);
