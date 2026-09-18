@@ -6,6 +6,7 @@
 #include "Archive/Formats/WadArchive.h"
 #include "ArchiveSession.h"
 #include "ArchiveSerializer.h"
+#include "SaveCoordinator.h"
 #include "Utility/MemChunk.h"
 
 using namespace slade;
@@ -156,6 +157,34 @@ void testArchiveSerializer()
     check(reopened.entryAt(0)->name() == "SERIAL", "serializer preserves renamed entry");
 }
 
+void testSaveCoordinator()
+{
+    const auto bytes = makeSingleEntryWad();
+    slade_mobile::ArchiveSession session;
+    slade_mobile::SaveCoordinator coordinator;
+
+    check(coordinator.validateForSave(session) != nullptr,
+          "save validation rejects closed session");
+
+    check(session.open(bytes.data(), static_cast<uint32_t>(bytes.size())),
+          "session opens for save coordinator test");
+
+    auto* entry = session.archive()->entryAt(0);
+    check(entry != nullptr, "save coordinator test entry exists");
+    check(session.archive()->renameEntry(entry, "VALIDATE"),
+          "rename before safe-save validation");
+
+    check(coordinator.validateForSave(session) == nullptr,
+          "save validation succeeds for valid modified WAD");
+    check(session.hasPendingSave(), "successful validation stores pending save");
+
+    WadArchive reopened;
+    check(reopened.open(*session.pendingSave()), "pending save output reopens");
+    check(reopened.numEntries() == 1, "validated output has one entry");
+    check(reopened.entryAt(0)->name() == "VALIDATE",
+          "validated output preserves modified entry");
+}
+
 void testArchiveSessionPendingSave()
 {
     const auto bytes = makeSingleEntryWad();
@@ -215,6 +244,7 @@ int main()
     testArchiveSessionLifecycle();
     testArchiveSessionPendingSave();
     testArchiveSerializer();
+    testSaveCoordinator();
 
     std::cout << "native_wad_tests: PASS\n";
     return 0;
