@@ -61,7 +61,7 @@ bool ArchiveOperations::add(ArchiveSession& session, const char* name, const voi
     if (!session.isOpen() || !name || !data || size == 0)
         return false;
 
-    auto entry = std::make_shared<ArchiveEntry>(name, size);
+    auto entry = std::make_shared<slade::ArchiveEntry>(name, size);
     if (!entry->importMem(data, size))
         return false;
 
