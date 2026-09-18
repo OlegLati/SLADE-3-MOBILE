@@ -44,6 +44,7 @@ add_library(slade_core STATIC
         ${SLADE_SRC}/Utility/Tree.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/compat/slade_shims.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ArchiveSession.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/ArchiveSerializer.cpp
 )
 
 target_include_directories(slade_core PUBLIC
