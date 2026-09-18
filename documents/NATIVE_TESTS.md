@@ -56,3 +56,9 @@ The native regression target now also covers the extracted `ArchiveSession` laye
 The session implementation lives in `app/src/main/cpp/ArchiveSession.h/.cpp` rather than inside the JNI bridge. The JNI bridge keeps only the process-local session instance and delegates lifecycle/state operations to this class.
 
 The test suite still does not exercise Android SAF file descriptors, JNI marshalling, or the Kotlin save flow. Those remain integration-level concerns.
+
+## R0.2 ArchiveSerializer coverage
+
+Serialization is now isolated in `app/src/main/cpp/ArchiveSerializer.h/.cpp`. The regression target verifies that a modified session can be serialized and reopened with the modification intact.
+
+The JNI bridge no longer owns the WAD serialization algorithm; it delegates to the serializer. Android file-descriptor I/O and the two-step Kotlin save orchestration remain outside this native unit-test layer.
