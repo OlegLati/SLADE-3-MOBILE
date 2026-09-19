@@ -408,7 +408,6 @@ class MainActivity : AppCompatActivity() {
         isBusy = busy
         binding.progressBar.visibility = if (busy) android.view.View.VISIBLE else android.view.View.GONE
         binding.btnOpenWad.isEnabled = !busy
-        binding.btnRunNativeTests.isEnabled = !busy
         binding.btnSaveAs.isEnabled = !busy && archiveOpen
         binding.btnAddEntry.isEnabled = !busy && archiveOpen
         binding.entryList.isEnabled = !busy // cosmetic only, see isBusy field comment
@@ -443,19 +442,6 @@ class MainActivity : AppCompatActivity() {
             binding.statusText.text = when (val result = archiveViewModel.greeting()) {
                 is NativeResult.Success -> result.value
                 is NativeResult.Failure -> result.message
-            }
-        }
-
-        binding.btnRunNativeTests.setOnClickListener {
-            if (isBusy) return@setOnClickListener
-            lifecycleScope.launch {
-                setBusy(true, "Running native tests…")
-                when (val result = SladeNative.runNativeTests()) {
-                    is NativeResult.Success -> binding.statusText.text = result.value
-                    is NativeResult.Failure -> binding.statusText.text =
-                        "Native tests error: " + result.message
-                }
-                setBusy(false)
             }
         }
 
