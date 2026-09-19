@@ -48,8 +48,8 @@ add_library(slade_core STATIC
         ${CMAKE_CURRENT_SOURCE_DIR}/SaveCoordinator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ArchiveOperations.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ArchiveEntryReader.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/ArchivePreview.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/ArchiveEntryList.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/ArchivePreview.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/ArchiveEntryList.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/FileDescriptorIO.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/NativeArchiveApi.cpp
 )
@@ -106,7 +106,11 @@ endif()
 # =============================================================================
 
 add_library(myapplication SHARED
-        native-lib.cpp)
+        native-lib.cpp
+        JniUtils.cpp)
+
+target_include_directories(myapplication PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(myapplication
         slade_core
