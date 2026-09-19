@@ -294,6 +294,26 @@ void testArchiveEntryReaderBoundaries()
     check(reader.findPalette(session, nullptr) == nullptr, "palette reader rejects null output size");
 }
 
+void testArchivePreviewRejectsShortInput()
+{
+    std::vector<uint8_t> palette(256 * 3, 0);
+    const uint8_t tiny[] = {0};
+
+    check(slade_mobile::decodeFlat(tiny, 1, palette.data()).empty(),
+          "flat decoder rejects short input");
+    check(slade_mobile::decodeFlat(nullptr, 4096, palette.data()).empty(),
+          "flat decoder rejects null data");
+    check(slade_mobile::decodeDoomGraphic(tiny, 1, palette.data(), nullptr, nullptr).empty(),
+          "patch decoder rejects missing dimensions");
+    int width = -1;
+    int height = -1;
+    check(slade_mobile::decodeDoomGraphic(tiny, 1, palette.data(), &width, &height).empty(),
+          "patch decoder rejects short input");
+    check(width == 0 && height == 0, "patch decoder resets dimensions on rejected input");
+    check(slade_mobile::audioInfoFor("WAV Sound", nullptr, 0).empty(),
+          "audio preview rejects null input");
+}
+
 void testArchivePreviewBoundaries()
 {
     const uint8_t malformedPatch[] = {2, 0, 2, 0, 0, 0, 0, 0};
@@ -441,6 +461,7 @@ int main()
     testArchiveEntryReaderBoundaries();
     testArchivePreview();
     testArchivePreviewBoundaries();
+    testArchivePreviewRejectsShortInput();
 
     std::cout << "native_wad_tests: PASS\n";
     return 0;
