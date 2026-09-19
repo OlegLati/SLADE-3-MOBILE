@@ -26,21 +26,21 @@ void putLE32(std::vector<uint8_t>& data, size_t offset, uint32_t value)
 
 std::vector<uint8_t> makeWad()
 {
-    std::vector<uint8_t> wad(12 + 4 + 16 + 3 + 16, 0);
+    std::vector<uint8_t> wad(12 + 5 + 3 + 32, 0);
     wad[0] = 'P'; wad[1] = 'W'; wad[2] = 'A'; wad[3] = 'D';
     putLE32(wad, 4, 2);
-    putLE32(wad, 8, 19);
+    putLE32(wad, 8, 20);
 
-    wad[12] = 'A'; wad[13] = 'B'; wad[14] = 'C'; wad[15] = 'D';
-    wad[16] = 'H'; wad[17] = 'E'; wad[18] = 'L'; wad[19] = 'L'; wad[20] = 'O';
+    wad[12] = 'H'; wad[13] = 'E'; wad[14] = 'L'; wad[15] = 'L'; wad[16] = 'O';
+    wad[17] = 'D'; wad[18] = 'A'; wad[19] = 'T';
 
-    putLE32(wad, 21, 12);
-    putLE32(wad, 25, 4);
-    wad[29] = 'T'; wad[30] = 'E'; wad[31] = 'S'; wad[32] = 'T';
+    putLE32(wad, 20, 12);
+    putLE32(wad, 24, 5);
+    wad[28] = 'T'; wad[29] = 'E'; wad[30] = 'X'; wad[31] = 'T'; wad[32] = ' ';
 
-    putLE32(wad, 37, 16);
-    putLE32(wad, 41, 3);
-    wad[45] = 'D'; wad[46] = 'A'; wad[47] = 'T';
+    putLE32(wad, 36, 17);
+    putLE32(wad, 40, 3);
+    wad[44] = 'D'; wad[45] = 'A'; wad[46] = 'T';
 
     return wad;
 }
@@ -62,8 +62,8 @@ void testEntryMetadata()
     const auto entries = slade_mobile::buildEntryList(session);
     check(entries.size() == 2, "list contains two entries");
 
-    check(entries[0].name == "TEST", "first entry name is TEST");
-    check(entries[0].size == 4, "first entry size is 4");
+    check(entries[0].name == "TEXT", "first entry name is TEXT");
+    check(entries[0].size == 5, "first entry size is 5");
     check(entries[0].type == "Text", "first entry type is Text");
 
     check(entries[1].name == "DAT", "second entry name is DAT");
