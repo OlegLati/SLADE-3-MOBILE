@@ -2,9 +2,11 @@
 #include <sstream>
 #include <string>
 
+#ifdef NATIVE_TEST_RUNNER_LIBRARY
 int runNativeWadTests();
 int runNativeAudioPreviewTests();
 int runNativeEntryListTests();
+#endif
 
 namespace
 {
@@ -20,6 +22,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_runNativeTests(
         jobject /* this */)
 {
     std::ostringstream out;
+#ifdef NATIVE_TEST_RUNNER_LIBRARY
     out << "Native regression tests\n";
 
     const int wadResult = runNativeWadTests();
@@ -37,6 +40,9 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_runNativeTests(
             entryListResult == 0;
 
     out << "Overall: " << (allPassed ? "PASS" : "FAIL");
+#else
+    out << "Native regression tests disabled (BUILD_NATIVE_TESTS=OFF)";
+#endif
 
     const std::string result = out.str();
     return env->NewStringUTF(result.c_str());
