@@ -444,7 +444,7 @@ void testAddAndSerialize()
 }
 }
 
-int main()
+int runNativeWadTests()
 {
     testOpenAndRead();
     testRejectInvalidWad();
@@ -462,7 +462,12 @@ int main()
     testArchivePreview();
     testArchivePreviewBoundaries();
     testArchivePreviewRejectsShortInput();
-
-    std::cout << "native_wad_tests: PASS\n";
     return 0;
+}
+
+int main()
+{
+    const int result = runNativeWadTests();
+    std::cout << "native_wad_tests: " << (result == 0 ? "PASS" : "FAIL") << "\n";
+    return result;
 }
