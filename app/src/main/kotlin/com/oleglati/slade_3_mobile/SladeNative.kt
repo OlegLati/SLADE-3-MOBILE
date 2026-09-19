@@ -45,7 +45,7 @@ object SladeNative {
         callNative { stringFromJNI() }
 
     suspend fun runNativeTests(): NativeResult<String> =
-        callNative { runNativeTests() }
+        callNative { runNativeTestsNative() }
 
     suspend fun openWad(fd: Int): NativeResult<Array<String>> =
         callNative { openWadFileFd(fd) }
@@ -121,7 +121,7 @@ object SladeNative {
         callNative { nativeReplaceEntry(index, fd) }
 
     private external fun stringFromJNI(): String
-    private external fun runNativeTests(): String
+    private external fun runNativeTestsNative(): String
     private external fun openWadFileFd(fd: Int): Array<String>
     private external fun getEntryText(index: Int): String?
     private external fun getEntryPalette(index: Int): IntArray?
