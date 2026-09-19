@@ -66,7 +66,7 @@ The project is not intended to replace the desktop version immediately. Instead,
 - Separation of Android UI, application state, repository/domain logic and native archive operations
 - Further separation of JNI from native domain logic
 - Stronger typed Kotlin/native data contracts
-- Preparation of native automated tests
+- Manual regression testing with a fixed set of WAD fixtures
 - Foundation for Undo/Redo
 
 ### Planned
@@ -168,7 +168,8 @@ SLADE_3_MOBILE/
 │   ├── ROADMAP.md
 │   ├── TECHNICAL.md
 │   ├── THIRD_PARTY_NOTICES.md
-│   └── REFACTORING.md
+│   ├── REFACTORING.md
+│   └── WAD_TESTING.md
 ├── README.md
 ├── README_ENG.md
 ├── SECURITY.md
@@ -250,6 +251,7 @@ Project documentation is kept in [`documents/`](documents/). Documents in that d
 - [`ROADMAP.md`](documents/ROADMAP.md) — development roadmap and milestones
 - [`TECHNICAL.md`](documents/TECHNICAL.md) — technical stack and implementation details
 - [`REFACTORING.md`](documents/REFACTORING.md) — structural refactoring strategy
+- [`WAD_TESTING.md`](documents/WAD_TESTING.md) — manual WAD regression and fixture workflow
 - [`THIRD_PARTY_NOTICES.md`](documents/THIRD_PARTY_NOTICES.md) — third-party software and license inventory
 
 ## Licensing
