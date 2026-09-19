@@ -465,9 +465,11 @@ int runNativeWadTests()
     return 0;
 }
 
+#ifndef NATIVE_TEST_RUNNER_LIBRARY
 int main()
 {
     const int result = runNativeWadTests();
     std::cout << "native_wad_tests: " << (result == 0 ? "PASS" : "FAIL") << "\n";
     return result;
 }
+#endif
