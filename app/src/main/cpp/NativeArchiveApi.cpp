@@ -34,6 +34,18 @@ bool NativeArchiveApi::move(unsigned index, unsigned newPosition)
     return operations_.move(session_, index, newPosition);
 }
 
+bool NativeArchiveApi::isOpen() const
+{
+    return session_.isOpen();
+}
+
+unsigned NativeArchiveApi::entryCount() const
+{
+    if (!session_.isOpen())
+        return 0;
+    return static_cast<unsigned>(session_.archive()->numEntries());
+}
+
 bool NativeArchiveApi::isDirty() const
 {
     return session_.isDirty();
