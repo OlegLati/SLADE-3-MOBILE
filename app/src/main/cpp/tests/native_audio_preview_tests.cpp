@@ -89,7 +89,9 @@ std::vector<uint8_t> makeMidi()
 {
     std::vector<uint8_t> data(14, 0);
     data[0] = 'M'; data[1] = 'T'; data[2] = 'h'; data[3] = 'd';
-    putBE16(data, 8, 1);\n    putBE16(data, 10, 2);\n    putBE16(data, 12, 96);\n    return data;
+    putBE16(data, 8, 1);
+    putBE16(data, 10, 2);
+    putBE16(data, 12, 96);\n    return data;
 }
 
 std::vector<uint8_t> makeMus()
@@ -136,7 +138,10 @@ std::vector<uint8_t> makeOgg()
     data[28] = 'v'; data[29] = 'o'; data[30] = 'r'; data[31] = 'b'; data[32] = 'i'; data[33] = 's';
     data[38] = 2;
     putLE32(data, 39, 44100);
-    uint64_t granule = 44100;\n    for (int i = 0; i < 8; ++i)\n        data[6 + i] = static_cast<uint8_t>(granule >> (8 * i));\n    return data;
+    uint64_t granule = 44100;
+    for (int i = 0; i < 8; ++i)
+        data[6 + i] = static_cast<uint8_t>(granule >> (8 * i));
+    return data;
 }
 
 void testWav()
@@ -230,23 +235,25 @@ void testTruncatedInputs()
 {
     const uint8_t tiny[] = {0};
 
-    const char* types[] = {
+    const char* truncatedTypes[] = {
         "WAV Sound",
         "DMX Sound",
         "PC Speaker Sound",
         "MIDI",
         "MUS Music",
         "FLAC Audio",
-        "MP3 Audio",
         "OGG Audio",
     };
 
-    for (const char* type : types)
+    for (const char* type : truncatedTypes)
     {
         const std::string info = slade_mobile::audioInfoFor(type, tiny, 1);
         check(!info.empty(), "truncated audio still returns diagnostic text");
         expectContains(info, "обрезан", type);
     }
+
+    const std::string mp3Info = slade_mobile::audioInfoFor("MP3 Audio", tiny, 1);
+    expectContains(mp3Info, "Не найден валидный MP3-фрейм", "MP3 reports missing frame");
 
     check(slade_mobile::audioInfoFor("Unknown", tiny, 1).empty(),
           "unknown type returns empty result");
