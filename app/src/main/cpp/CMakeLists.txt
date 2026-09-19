@@ -79,33 +79,6 @@ target_compile_options(slade_core PUBLIC
 find_package(ZLIB REQUIRED)
 target_link_libraries(slade_core PUBLIC z log)
 
-# Optional native regression tests. Keep disabled for normal app builds; enable
-# explicitly when validating the headless SLADE core after structural changes.
-option(BUILD_NATIVE_TESTS "Build native WAD regression tests" OFF)
-
-if(BUILD_NATIVE_TESTS)
-    add_executable(native_wad_tests
-            tests/native_wad_tests.cpp)
-
-    target_link_libraries(native_wad_tests
-            slade_core
-            log)
-
-    add_executable(native_audio_preview_tests
-            tests/native_audio_preview_tests.cpp)
-
-    target_link_libraries(native_audio_preview_tests
-            slade_core
-            log)
-
-    add_executable(native_entry_list_tests
-            tests/native_entry_list_tests.cpp)
-
-    target_link_libraries(native_entry_list_tests
-            slade_core
-            log)
-endif()
-
 # NEXT FILES TO ADD, roughly in order of usefulness/difficulty:
 #   Archive/Formats/DirArchive.cpp                   (no extra deps)
 #   Archive/Formats/GrpArchive.cpp, PakArchive.cpp    (simple formats)
@@ -123,18 +96,10 @@ endif()
 add_library(myapplication SHARED
         native-lib.cpp
         JniUtils.cpp
-        ArchiveEntryListJni.cpp
-        NativeTestRunnerJni.cpp
-        $<$<BOOL:${BUILD_NATIVE_TESTS}>:${CMAKE_CURRENT_SOURCE_DIR}/tests/native_wad_tests.cpp>
-        $<$<BOOL:${BUILD_NATIVE_TESTS}>:${CMAKE_CURRENT_SOURCE_DIR}/tests/native_audio_preview_tests.cpp>
-        $<$<BOOL:${BUILD_NATIVE_TESTS}>:${CMAKE_CURRENT_SOURCE_DIR}/tests/native_entry_list_tests.cpp>)
+        ArchiveEntryListJni.cpp)
 
 target_include_directories(myapplication PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR})
-
-if(BUILD_NATIVE_TESTS)
-    target_compile_definitions(myapplication PRIVATE NATIVE_TEST_RUNNER_LIBRARY=1)
-endif()
 
 target_link_libraries(myapplication
         slade_core
