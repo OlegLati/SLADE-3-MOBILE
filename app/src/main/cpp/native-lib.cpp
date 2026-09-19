@@ -13,15 +13,9 @@
 
 #include "NativeArchiveApi.h"
 #include "FileDescriptorIO.h"
-#include "Archive/ArchiveEntry.h"
 #include "ArchivePreview.h"
 #include "JniUtils.h"
 #include "ArchiveEntryList.h"
-
-namespace slade
-{
-std::string androidDetectEntryType(std::string_view upperName, uint32_t size, const uint8_t* data);
-}
 
 namespace
 {
@@ -177,18 +171,17 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryImage(
         jobject /* this */,
         jint index) {
 
-    uint32_t       size  = 0;
-    slade::ArchiveEntry*  entry = nullptr;
-    const uint8_t* ptr   = g_archiveApi.entryData(index, &size, &entry);
+    uint32_t size = 0;
+    const uint8_t* ptr = g_archiveApi.entryData(index, &size);
     if (!ptr)
         return nullptr;
 
-    const std::string type = slade::androidDetectEntryType(entry->upperName(), size, ptr);
+    const std::string type = g_archiveApi.entryType(index);
     if (type != "Flat" && type != "Doom Graphic")
         return nullptr;
 
-    uint32_t       palSize = 0;
-    const uint8_t* pal     = g_archiveApi.paletteData(&palSize);
+    uint32_t palSize = 0;
+    const uint8_t* pal = g_archiveApi.paletteData(&palSize);
     if (!pal)
         return nullptr; // no PLAYPAL (or equivalent) anywhere in this archive
 
@@ -226,13 +219,12 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryPng(
         jobject /* this */,
         jint index) {
 
-    uint32_t       size  = 0;
-    slade::ArchiveEntry*  entry = nullptr;
-    const uint8_t* ptr   = g_archiveApi.entryReader().data(g_archiveApi.session(), index, &size, &entry);
+    uint32_t size = 0;
+    const uint8_t* ptr = g_archiveApi.entryData(index, &size);
     if (!ptr)
         return nullptr;
 
-    if (slade::androidDetectEntryType(entry->upperName(), size, ptr) != "PNG Image")
+    if (g_archiveApi.entryType(index) != "PNG Image")
         return nullptr;
 
     constexpr uint32_t kMaxPngBytes = 16 * 1024 * 1024; // 16 MB
@@ -257,13 +249,12 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryAudioInfo(
         jobject /* this */,
         jint index) {
 
-    uint32_t       size  = 0;
-    slade::ArchiveEntry*  entry = nullptr;
-    const uint8_t* ptr   = g_archiveApi.entryReader().data(g_archiveApi.session(), index, &size, &entry);
+    uint32_t size = 0;
+    const uint8_t* ptr = g_archiveApi.entryData(index, &size);
     if (!ptr)
         return nullptr;
 
-    const std::string type = slade::androidDetectEntryType(entry->upperName(), size, ptr);
+    const std::string type = g_archiveApi.entryType(index);
     const std::string info = slade_mobile::audioInfoFor(type, ptr, size);
     if (info.empty())
         return nullptr;
