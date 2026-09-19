@@ -68,13 +68,13 @@ slade_mobile::NativeArchiveApi g_archiveApi;
 // overwrite the original file the archive came from, which is exactly
 // the scenario iwad_lock exists to guard against -- left untouched, so
 // write() can refuse a real IWAD on its own and report why via
-// slade::global::error (checked by the caller).
+// slade::slade::global::error (checked by the caller).
 namespace
 {
 }
 
 
-// Text lumps are, per androidDetectEntryType()'s own check, printable
+// Text lumps are, per slade::androidDetectEntryType()'s own check, printable
 // ASCII for at least the first 512 bytes -- but a longer lump isn't
 // guaranteed ASCII-only past that prefix, and NewStringUTF() expects
 // valid modified UTF-8. Rather than risk a JNI-level crash we can't debug
@@ -165,7 +165,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_stringFromJNI(
 // a RecyclerView adapter instead of dumping everything into one TextView.
 //
 // CHANGED (real EntryType detection): each entry is now run through
-// androidDetectEntryType() (compat/slade_shims.cpp) before being reported,
+// slade::androidDetectEntryType() (compat/slade_shims.cpp) before being reported,
 // so the type name reflects real byte-signature/name-based detection
 // rather than always being "unknown". This is a standalone classifier, not
 // the real EntryType engine -- see the comment above androidDetectEntryType's
@@ -241,7 +241,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_openWadFileFd(
 // entry types (see HANDOFF discussion). Both look the entry up again by
 // index in the persistent g_wad/g_mc pair rather than trusting anything
 // cached on the Kotlin side, and both independently re-run
-// androidDetectEntryType() rather than trusting the type string Kotlin
+// slade::androidDetectEntryType() rather than trusting the type string Kotlin
 // already has -- cheap, and it means these functions are self-contained
 // and can't be tricked into misreading an entry as the wrong type by a
 // stale adapter list.
@@ -292,12 +292,12 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryPalette(
         jint index) {
 
     uint32_t       size  = 0;
-    ArchiveEntry*  entry = nullptr;
+    slade::ArchiveEntry*  entry = nullptr;
     const uint8_t* ptr   = g_archiveApi.entryData(index, &size, &entry);
     if (!ptr)
         return nullptr;
 
-    if (slade::androidDetectEntryType(entry->upperName(), size, ptr) != "Palette")
+    if (slade::slade::androidDetectEntryType(entry->upperName(), size, ptr) != "Palette")
         return nullptr;
 
     const uint32_t numColors = size / 3;
@@ -342,12 +342,12 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryImage(
         jint index) {
 
     uint32_t       size  = 0;
-    ArchiveEntry*  entry = nullptr;
+    slade::ArchiveEntry*  entry = nullptr;
     const uint8_t* ptr   = g_archiveApi.entryData(index, &size, &entry);
     if (!ptr)
         return nullptr;
 
-    const std::string type = androidDetectEntryType(entry->upperName(), size, ptr);
+    const std::string type = slade::androidDetectEntryType(entry->upperName(), size, ptr);
     if (type != "Flat" && type != "Doom Graphic")
         return nullptr;
 
@@ -358,14 +358,14 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryImage(
 
     if (type == "Flat")
     {
-        // androidDetectEntryType() only returns "Flat" for exactly 4096 or
+        // slade::androidDetectEntryType() only returns "Flat" for exactly 4096 or
         // 4160 bytes -- both comfortably cover the 64x64 = 4096 pixels
         // slade_mobile::decodeFlat() reads, so no further size check needed here.
         std::vector<jint> pixels = slade_mobile::decodeFlat(ptr, size, pal);
         return packImage(env, 64, 64, pixels);
     }
 
-    // Doom Graphic: androidDetectEntryType() already sanity-checked that
+    // Doom Graphic: slade::androidDetectEntryType() already sanity-checked that
     // size >= 8 + 4*width and that the first column offset lands inside
     // the entry, but slade_mobile::decodeDoomGraphic() re-derives width from the header
     // itself and bounds-checks every column offset independently, so
@@ -391,12 +391,12 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryPng(
         jint index) {
 
     uint32_t       size  = 0;
-    ArchiveEntry*  entry = nullptr;
+    slade::ArchiveEntry*  entry = nullptr;
     const uint8_t* ptr   = g_archiveApi.entryReader().data(g_archiveApi.session(), index, &size, &entry);
     if (!ptr)
         return nullptr;
 
-    if (androidDetectEntryType(entry->upperName(), size, ptr) != "PNG Image")
+    if (slade::androidDetectEntryType(entry->upperName(), size, ptr) != "PNG Image")
         return nullptr;
 
     constexpr uint32_t kMaxPngBytes = 16 * 1024 * 1024; // 16 MB
@@ -411,7 +411,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryPng(
 }
 
 // Returns a formatted multi-line info string for any of the nine audio
-// lump types androidDetectEntryType() recognizes (see slade_mobile::audioInfoFor()
+// lump types slade::androidDetectEntryType() recognizes (see slade_mobile::audioInfoFor()
 // above), or null if the entry isn't audio, the archive isn't open, or
 // the index is invalid. Deliberately info-only, not playback -- see the
 // comment above the parser block for why.
@@ -422,12 +422,12 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryAudioInfo(
         jint index) {
 
     uint32_t       size  = 0;
-    ArchiveEntry*  entry = nullptr;
+    slade::ArchiveEntry*  entry = nullptr;
     const uint8_t* ptr   = g_archiveApi.entryReader().data(g_archiveApi.session(), index, &size, &entry);
     if (!ptr)
         return nullptr;
 
-    const std::string type = androidDetectEntryType(entry->upperName(), size, ptr);
+    const std::string type = slade::androidDetectEntryType(entry->upperName(), size, ptr);
     const std::string info = slade_mobile::audioInfoFor(type, ptr, size);
     if (info.empty())
         return nullptr;
