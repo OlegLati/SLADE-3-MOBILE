@@ -93,12 +93,17 @@ void testModifiedEntryUsesCurrentData()
 
 } // namespace
 
-int main()
+int runNativeEntryListTests()
 {
     testClosedSession();
     testEntryMetadata();
     testModifiedEntryUsesCurrentData();
-
-    std::cout << "native_entry_list_tests: PASS\\n";
     return 0;
+}
+
+int main()
+{
+    const int result = runNativeEntryListTests();
+    std::cout << "native_entry_list_tests: " << (result == 0 ? "PASS" : "FAIL") << "\n";
+    return result;
 }
