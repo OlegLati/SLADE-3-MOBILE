@@ -14,31 +14,7 @@
 // self-contained. Skipping this is exactly what broke the previous attempt.
 #include "Main.h"
 
-#include "Archive/Formats/WadArchive.h"
-#include "Utility/MemChunk.h"
 #include "NativeArchiveApi.h"
-#include "FileDescriptorIO.h"
-using namespace slade;
-
-// WadArchive::write() refuses to serialize an IWAD (e.g. DOOM.WAD) at all
-// while this is true -- SLADE's own built-in safeguard against clobbering
-// someone's original game IWAD in place. Declared here (defined in
-// WadArchive.cpp) the same way WadJArchive.cpp does it, so saveToFd() can
-// toggle it off for the one call where it doesn't apply -- see the
-// comment there for why.
-// Defined in compat/slade_shims.cpp -- a real (not EntryType-based) byte-
-// signature + name classifier. Takes the entry's uppercase name, size, and
-// a raw pointer to its bytes directly, rather than an ArchiveEntry& --
-// deliberately reads straight out of the shared WAD MemChunk (mc, below)
-// by offset instead of going through ArchiveEntry::data()/rawData() at
-// all. See the comment above its definition for the full story (in short:
-// WadArchive::loadEntryData() only works from a file on disk, which we
-// don't have, and an earlier per-entry-copy workaround risked tripling
-// memory use on large WADs).
-namespace slade
-{
-std::string androidDetectEntryType(std::string_view upperName, uint32_t size, const uint8_t* data);
-}
 
 // -----------------------------------------------------------------------
 // ArchiveSession (Phase 6, ROADMAP.md): replaces the previous g_mc/g_wad
@@ -163,17 +139,14 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_stringFromJNI(
         12, 0, 0, 0   // infotableofs = 12 (right after the header)
     };
 
-    MemChunk mc;
-    mc.importMem(header, sizeof(header));
-
-    WadArchive wad;
-    bool ok = wad.open(mc);
+    slade_mobile::NativeArchiveApi api;
+    const bool ok = api.open(header, sizeof(header));
 
     std::ostringstream out;
     out << "SLADE core on Android\n";
     out << "WadArchive::open() -> " << (ok ? "OK" : "FAILED") << "\n";
     if (ok)
-        out << "Entries: " << wad.numEntries();
+        out << "Entries: " << api.session().archive()->numEntries();
 
     std::string result = out.str();
     return env->NewStringUTF(result.c_str());
@@ -279,11 +252,11 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryText(
 
     uint32_t        size = 0;
     ArchiveEntry*    entry = nullptr;
-    const uint8_t*   ptr  = g_archiveApi.entryReader().data(g_archiveApi.session(), index, &size, &entry);
+    const uint8_t*   ptr  = g_archiveApi.entryData(index, &size, &entry);
     if (!ptr)
         return nullptr;
 
-    if (androidDetectEntryType(entry->upperName(), size, ptr) != "Text")
+    if (g_archiveApi.entryType(index) != "Text")
         return nullptr;
 
     constexpr uint32_t kMaxPreview = 262144; // 256 KB
@@ -312,7 +285,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryPalette(
 
     uint32_t       size  = 0;
     ArchiveEntry*  entry = nullptr;
-    const uint8_t* ptr   = g_archiveApi.entryReader().data(g_archiveApi.session(), index, &size, &entry);
+    const uint8_t* ptr   = g_archiveApi.entryData(index, &size, &entry);
     if (!ptr)
         return nullptr;
 
@@ -371,7 +344,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryImage(
         return nullptr;
 
     uint32_t       palSize = 0;
-    const uint8_t* pal     = g_archiveApi.entryReader().findPalette(g_archiveApi.session(), &palSize);
+    const uint8_t* pal     = g_archiveApi.paletteData(&palSize);
     if (!pal)
         return nullptr; // no PLAYPAL (or equivalent) anywhere in this archive
 
