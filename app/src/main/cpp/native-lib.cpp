@@ -4,6 +4,7 @@
 #include <sstream>
 #include <vector>
 #include <memory>
+#include <unistd.h>
 
 
 // SLADE convention: every .cpp file includes Main.h FIRST. It's the header
