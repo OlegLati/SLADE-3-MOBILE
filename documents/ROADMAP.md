@@ -29,7 +29,7 @@
 
 > **Phase 8.5 — структурный рефакторинг.**
 
-Главные следующие задачи — R0–R10 из `REFACTORING.md`, прежде всего baseline/regression protection, разделение Kotlin state, разделение JNI и native domain, а затем native tests и основа Undo/Redo.
+Главные следующие задачи — R0–R10 из `REFACTORING.md`, прежде всего baseline/regression protection, разделение Kotlin state, разделение JNI и native domain, ручная проверка WAD fixtures и основа Undo/Redo.
 
 ## Важные ограничения текущей версии
 
@@ -244,7 +244,7 @@ R4  Data contract
 R5  Compatibility layer
 R6  Save pipeline
 R7  Undo / Redo
-R8  Native tests / CI
+R8  Manual WAD regression fixtures
 R9  Performance profiling
 R10 PK3 / ZIP readiness
 ```
@@ -253,7 +253,7 @@ R10 PK3 / ZIP readiness
 
 # Phase 9 — Undo / Redo
 
-**Статус: ПЛАНИРУЕТСЯ после стабилизации архитектуры**
+**Статус: ПЛАНИРУЕТСЯ после стабилизации архитектуры и ручной WAD-регрессии**
 
 Целевая модель — история команд для:
 
@@ -267,22 +267,25 @@ R10 PK3 / ZIP readiness
 
 ---
 
-# Phase 10 — нативные тесты
+# Phase 10 — ручная WAD-регрессия
 
-**Статус: P0 после R0/R2**
+**Статус: В РАБОТЕ**
 
-Минимальные native/regression tests должны покрывать:
+Автоматизированный native test runner из проекта удалён. Для текущего этапа используется набор небольших WAD-fixture файлов, которые проверяются вручную через Android UI.
 
-- открытие корректного WAD;
-- пустой WAD;
-- каталог записей;
-- чтение данных;
-- неправильные offsets/sizes;
-- повреждённый WAD;
-- обрезанный файл;
-- сериализацию;
-- валидацию перед сохранением;
-- Discard.
+Базовый набор должен покрывать:
+
+- пустые IWAD/PWAD;
+- один lump;
+- несколько lumps разных размеров;
+- нулевой размер lump;
+- граничные имена lump;
+- каталог до/после данных;
+- некорректные offsets/sizes;
+- повреждённый или обрезанный WAD;
+- реальные WAD с картами, ресурсами и аудио.
+
+Порядок проверки и ожидаемые результаты фиксируются в `documents/WAD_TESTING.md`.
 
 ---
 
@@ -350,7 +353,7 @@ Map
 
 - regression baseline;
 - структурный рефакторинг;
-- native tests;
+- ручная WAD-регрессия;
 - Undo/Redo foundation;
 - корректность Save/Discard.
 
@@ -403,7 +406,7 @@ WAD Editor MVP считается завершённым, если:
 - JNI не содержит основной domain logic;
 - ownership native-данных очевиден;
 - save pipeline имеет отдельную понятную границу;
-- native tests выполняются автоматически;
+- ручная WAD-регрессия проходит через зафиксированный набор fixtures;
 - документация совпадает с кодом.
 
 ---
