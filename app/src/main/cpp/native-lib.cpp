@@ -1,9 +1,6 @@
 #include <jni.h>
-#include <cstdio>
-#include <cstring>
 #include <sstream>
 #include <vector>
-#include <memory>
 #include <unistd.h>
 
 
@@ -14,7 +11,6 @@
 // self-contained. Skipping this is exactly what broke the previous attempt.
 #include "Main.h"
 
-#include "Archive/Formats/WadArchive.h"
 #include "NativeArchiveApi.h"
 #include "FileDescriptorIO.h"
 #include "Archive/ArchiveEntry.h"
