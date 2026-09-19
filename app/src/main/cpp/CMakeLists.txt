@@ -51,6 +51,7 @@ add_library(slade_core STATIC
 ${CMAKE_CURRENT_SOURCE_DIR}/ArchivePreview.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/ArchiveEntryList.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/FileDescriptorIO.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/NativeArchiveApi.cpp
 )
 
 target_include_directories(slade_core PUBLIC
