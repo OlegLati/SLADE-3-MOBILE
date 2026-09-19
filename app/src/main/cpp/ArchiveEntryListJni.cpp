@@ -1,5 +1,5 @@
 #include "Main.h"
-#include "ArchiveEntryList.h"
+#include "ArchiveEntryListJni.h"
 
 namespace slade_mobile
 {
