@@ -10,52 +10,50 @@ std::string androidDetectEntryType(std::string_view upperName, uint32_t size, co
 
 namespace slade_mobile
 {
-jobjectArray buildEntryListArray(JNIEnv* env, ArchiveSession& session)
+std::vector<ArchiveEntryInfo> buildEntryList(const ArchiveSession& session)
 {
-    jclass stringClass = env->FindClass("java/lang/String");
+    std::vector<ArchiveEntryInfo> result;
 
-    auto*    wad   = session.archive();
-    auto*    mc    = session.memChunk();
-    unsigned count = wad->numEntries();
-    jobjectArray result = env->NewObjectArray(static_cast<jsize>(count), stringClass, nullptr);
+    auto* wad = session.archive();
+    auto* mc = session.memChunk();
+    if (!wad || !mc)
+        return result;
+
+    const unsigned count = wad->numEntries();
+    result.reserve(count);
 
     for (unsigned i = 0; i < count; ++i)
     {
         auto* entry = wad->entryAt(i);
-
-        std::ostringstream line;
-        if (entry)
+        if (!entry)
         {
-            const uint32_t size = entry->size();
-            const uint8_t* ptr  = nullptr;
-            // Phase 7 (Export/Import/Replace): same isLoaded()-first check
-            // as reader.data(session, ) -- a replaced entry's real current bytes
-            // live in entry->rawData(), not at its old offset in mc. See
-            // reader.data(session, )'s comment for the full reasoning.
-            if (entry->isLoaded())
-            {
-                if (size > 0)
-                    ptr = entry->rawData(false);
-            }
-            else
-            {
-                const uint32_t offset = wad->getEntryOffset(entry);
-                if (size > 0 && static_cast<uint64_t>(offset) + size <= mc->size())
-                    ptr = mc->data() + offset;
-            }
+            result.push_back({"?", 0, "?"});
+            continue;
+        }
 
-            line << entry->name() << "\t" << size << "\t" << slade::androidDetectEntryType(entry->upperName(), size, ptr);
+        const uint32_t size = entry->size();
+        const uint8_t* ptr = nullptr;
+
+        if (entry->isLoaded())
+        {
+            if (size > 0)
+                ptr = entry->rawData(false);
         }
         else
-            line << "?\t0\t?";
+        {
+            const uint32_t offset = wad->getEntryOffset(entry);
+            if (size > 0 && static_cast<uint64_t>(offset) + size <= mc->size())
+                ptr = mc->data() + offset;
+        }
 
-        env->SetObjectArrayElement(
-            result,
-            static_cast<jsize>(i),
-            env->NewStringUTF(line.str().c_str()));
+        result.push_back({
+            entry->name(),
+            size,
+            slade::androidDetectEntryType(entry->upperName(), size, ptr)
+        });
     }
 
     return result;
 }
 
-}
+} // namespace slade_mobile
