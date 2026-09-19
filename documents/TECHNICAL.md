@@ -292,7 +292,7 @@ R4  Typed data contract
 R5  Compatibility layer cleanup
 R6  Save pipeline isolation
 R7  Undo/Redo foundation
-R8  Native tests / CI
+R8  Manual WAD regression fixtures
 R9  Performance profiling
 R10 PK3/ZIP readiness
 ```
