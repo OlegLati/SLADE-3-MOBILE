@@ -286,9 +286,11 @@ int runNativeAudioPreviewTests()
     return 0;
 }
 
+#ifndef NATIVE_TEST_RUNNER_LIBRARY
 int main()
 {
     const int result = runNativeAudioPreviewTests();
     std::cout << "native_audio_preview_tests: " << (result == 0 ? "PASS" : "FAIL") << "\n";
     return result;
 }
+#endif
