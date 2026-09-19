@@ -16,6 +16,13 @@
 
 #include "Archive/Formats/WadArchive.h"
 #include "NativeArchiveApi.h"
+#include "FileDescriptorIO.h"
+#include "Archive/ArchiveEntry.h"
+
+namespace slade
+{
+std::string androidDetectEntryType(std::string_view upperName, uint32_t size, const uint8_t* data);
+}
 
 // -----------------------------------------------------------------------
 // ArchiveSession (Phase 6, ROADMAP.md): replaces the previous g_mc/g_wad
@@ -61,7 +68,7 @@ slade_mobile::NativeArchiveApi g_archiveApi;
 // overwrite the original file the archive came from, which is exactly
 // the scenario iwad_lock exists to guard against -- left untouched, so
 // write() can refuse a real IWAD on its own and report why via
-// global::error (checked by the caller).
+// slade::global::error (checked by the caller).
 namespace
 {
 }
@@ -252,7 +259,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryText(
         jint index) {
 
     uint32_t        size = 0;
-    ArchiveEntry*    entry = nullptr;
+    slade::ArchiveEntry*    entry = nullptr;
     const uint8_t*   ptr  = g_archiveApi.entryData(index, &size, &entry);
     if (!ptr)
         return nullptr;
@@ -290,7 +297,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryPalette(
     if (!ptr)
         return nullptr;
 
-    if (androidDetectEntryType(entry->upperName(), size, ptr) != "Palette")
+    if (slade::androidDetectEntryType(entry->upperName(), size, ptr) != "Palette")
         return nullptr;
 
     const uint32_t numColors = size / 3;
