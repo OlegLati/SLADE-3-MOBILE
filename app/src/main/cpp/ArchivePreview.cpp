@@ -14,9 +14,12 @@ namespace slade_mobile
 // 4096 (classic 64x64) or 4160 (Heretic/Hexen animated liquid flats, 64x64
 // plus 64 trailing bytes of engine-specific data that isn't part of the
 // pixel grid) as "Flat", so 64x64 read from the front covers both cases.
-std::vector<int32_t> decodeFlat(const uint8_t* data, uint32_t /* size */, const uint8_t* pal)
+std::vector<int32_t> decodeFlat(const uint8_t* data, uint32_t size, const uint8_t* pal)
 {
     constexpr int kDim = 64;
+    constexpr uint32_t kPixels = kDim * kDim;
+    if (!data || !pal || size < kPixels)
+        return {};
     std::vector<int32_t> pixels(static_cast<size_t>(kDim) * kDim);
     for (int i = 0; i < kDim * kDim; ++i)
     {
@@ -48,8 +51,19 @@ std::vector<int32_t> decodeFlat(const uint8_t* data, uint32_t /* size */, const 
 // IWADs/PWADs this app has been validated against so far.
 std::vector<int32_t> decodeDoomGraphic(const uint8_t* data, uint32_t size, const uint8_t* pal, int* outW, int* outH)
 {
+    if (!outW || !outH)
+        return {};
+    *outW = 0;
+    *outH = 0;
+    if (!data || !pal || size < 8)
+        return {};
+
     const uint16_t width  = static_cast<uint16_t>(data[0] | (data[1] << 8));
     const uint16_t height = static_cast<uint16_t>(data[2] | (data[3] << 8));
+
+    const uint64_t columnTableEnd = 8ull + static_cast<uint64_t>(width) * 4ull;
+    if (columnTableEnd > size)
+        return {};
 
     std::vector<int32_t> pixels(static_cast<size_t>(width) * height, 0); // transparent by default
 
@@ -459,6 +473,9 @@ std::string parseOgg(const uint8_t* data, uint32_t size)
 // audio entry at all".
 std::string audioInfoFor(const std::string& type, const uint8_t* data, uint32_t size)
 {
+    if (type != "GENMIDI Instruments" && (!data || size == 0))
+        return "";
+
     if (type == "WAV Sound")
         return parseWav(data, size);
     if (type == "DMX Sound")
