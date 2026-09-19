@@ -15,7 +15,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import androidx.activity.viewModels
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.oleglati.slade_3_mobile.databinding.ActivityMainBinding
 import kotlinx.coroutines.Job
@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private val archiveViewModel: ArchiveViewModel by viewModels()
+    private val archiveViewModel: ArchiveViewModel by lazy { ViewModelProvider(this)[ArchiveViewModel::class.java] }
     private val adapter = WadEntryAdapter(
         onEntryClick = ::onEntryClicked,
         onEntryLongClick = ::onEntryLongClicked
