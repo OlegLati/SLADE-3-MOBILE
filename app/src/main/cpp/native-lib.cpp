@@ -16,7 +16,7 @@
 #include "ArchivePreview.h"
 #include "ArchiveAudioPreview.h"
 #include "JniUtils.h"
-#include "ArchiveEntryList.h"
+#include "ArchiveEntryListJni.h"
 
 namespace
 {
