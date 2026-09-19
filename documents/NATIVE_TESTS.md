@@ -13,7 +13,12 @@ It deliberately tests the SLADE WAD layer directly rather than going through JNI
 - reject an invalid WAD;
 - reject a truncated WAD;
 - rename an entry, serialize, and reopen;
-- add an entry, serialize, and reopen.
+- add an entry, serialize, and reopen;
+- ArchiveSession lifecycle, dirty state, discard and pending-save ownership;
+- SaveCoordinator validation and pending-save retention;
+- ArchiveOperations success paths and invalid-input boundaries;
+- ArchiveEntryReader invalid-session/index/output boundaries;
+- ArchivePreview flat decoding, WAV metadata, malformed patch bounds and unknown-type dispatch.
 
 The tests use an in-memory WAD fixture, so they do not depend on external game files.
 
@@ -29,14 +34,12 @@ The test binary is intentionally separate from the application JNI library. It e
 
 ## Scope
 
-This is only the first R0 slice. It does not yet cover:
+This is still a native unit-test slice. It does not cover:
 
-- ArchiveSession;
 - JNI marshalling;
-- validateForSave() / commitSave();
-- discardChanges();
+- commitSave() file-descriptor writes;
 - SAF file-descriptor handling;
-- Android UI.
+- Android UI and Kotlin save orchestration.
 
 Those require either a small test seam around the native application layer or Android instrumentation coverage. They should be added without changing production behavior.
 
