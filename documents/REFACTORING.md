@@ -104,9 +104,9 @@ extract → compile → run → regression → commit
 
 ## 6. R0 — фиксация baseline и защита от регрессий
 
-**Статус:** следующий обязательный этап.
+**Статус:** в работе; native regression slice уже выделен и расширен.
 
-Перед крупным рефакторингом зафиксировать успешную debug-сборку и сценарии Open → Browse → Preview, Rename, Delete, Move, Replace, Add, Export, Discard, Save As и сохранение в исходный файл.
+Перед крупным рефакторингом зафиксировать успешную debug-сборку и сценарии Open → Browse → Preview, Rename, Delete, Move, Replace, Add, Export, Discard, Save As и сохранение в исходный файл. Native regression target уже покрывает WAD open/read/serialize, session lifecycle, discard, pending save, validation, archive operations и ключевые preview boundaries.
 
 Минимальный контрольный сценарий после каждой крупной стадии:
 
@@ -174,7 +174,7 @@ serialize → validate → open rwt → commit
 
 ## 14. R8 — native tests и CI
 
-Добавить fixture-файлы для нормального, пустого, большого, повреждённого и обрезанного WAD и проверки открытия, каталога, данных, границ, валидации сохранения и Discard.
+Расширить существующий native regression slice fixture-файлами для нормального, пустого, большого, повреждённого и обрезанного WAD; затем подключить воспроизводимый CI-запуск native target. На текущем этапе тесты остаются in-memory и запускаются через отдельный `native_wad_tests` target.
 
 ## 15. R9 — профилирование
 
