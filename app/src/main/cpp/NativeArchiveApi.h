@@ -31,6 +31,11 @@ public:
     bool addEntry(const char* name, int fd);
     bool replaceEntry(unsigned index, int fd);
 
+    const uint8_t* entryData(unsigned index, uint32_t* outSize,
+                             slade::ArchiveEntry** outEntry = nullptr);
+    std::string entryType(unsigned index);
+    const uint8_t* paletteData(uint32_t* outSize);
+
     ArchiveSession& session();
     const ArchiveSession& session() const;
     ArchiveEntryReader& entryReader();
