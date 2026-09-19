@@ -115,7 +115,8 @@ endif()
 
 add_library(myapplication SHARED
         native-lib.cpp
-        JniUtils.cpp)
+        JniUtils.cpp
+        ArchiveEntryListJni.cpp)
 
 target_include_directories(myapplication PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR})
