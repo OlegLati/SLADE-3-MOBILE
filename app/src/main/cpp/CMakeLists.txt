@@ -123,10 +123,18 @@ endif()
 add_library(myapplication SHARED
         native-lib.cpp
         JniUtils.cpp
-        ArchiveEntryListJni.cpp)
+        ArchiveEntryListJni.cpp
+        NativeTestRunnerJni.cpp
+        $<$<BOOL:${BUILD_NATIVE_TESTS}>:${CMAKE_CURRENT_SOURCE_DIR}/tests/native_wad_tests.cpp>
+        $<$<BOOL:${BUILD_NATIVE_TESTS}>:${CMAKE_CURRENT_SOURCE_DIR}/tests/native_audio_preview_tests.cpp>
+        $<$<BOOL:${BUILD_NATIVE_TESTS}>:${CMAKE_CURRENT_SOURCE_DIR}/tests/native_entry_list_tests.cpp>)
 
 target_include_directories(myapplication PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR})
+
+if(BUILD_NATIVE_TESTS)
+    target_compile_definitions(myapplication PRIVATE NATIVE_TEST_RUNNER_LIBRARY=1)
+endif()
 
 target_link_libraries(myapplication
         slade_core
