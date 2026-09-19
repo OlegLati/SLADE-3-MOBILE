@@ -227,7 +227,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_openWadFileFd(
 
     if (!ok)
     {
-        std::string msg = "ERROR: " + global::error;
+        std::string msg = "ERROR: " + slade::global::error;
         jobjectArray result = env->NewObjectArray(1, stringClass, nullptr);
         env->SetObjectArrayElement(result, 0, env->NewStringUTF(msg.c_str()));
         return result;
@@ -297,7 +297,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryPalette(
     if (!ptr)
         return nullptr;
 
-    if (slade::slade::androidDetectEntryType(entry->upperName(), size, ptr) != "Palette")
+    if (slade::androidDetectEntryType(entry->upperName(), size, ptr) != "Palette")
         return nullptr;
 
     const uint32_t numColors = size / 3;
