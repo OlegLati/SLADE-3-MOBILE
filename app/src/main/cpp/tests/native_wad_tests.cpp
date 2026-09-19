@@ -250,6 +250,73 @@ void testArchiveOperations()
           "added entry data survives serialization");
 }
 
+void testArchiveOperationBoundaries()
+{
+    const auto bytes = makeSingleEntryWad();
+    slade_mobile::ArchiveSession session;
+    slade_mobile::ArchiveOperations operations;
+
+    check(!operations.rename(session, 0, "NOPE"), "rename rejects closed session");
+    check(!operations.remove(session, 0), "remove rejects closed session");
+    check(!operations.move(session, 0, 0), "move rejects closed session");
+    check(!operations.add(session, "NOPE", "x", 1), "add rejects closed session");
+    check(!operations.replace(session, 0, "x", 1), "replace rejects closed session");
+
+    check(session.open(bytes.data(), static_cast<uint32_t>(bytes.size())),
+          "session opens for operation boundary test");
+
+    check(!operations.rename(session, 99, "NOPE"), "rename rejects invalid index");
+    check(!operations.remove(session, 99), "remove rejects invalid index");
+    check(!operations.move(session, 99, 0), "move rejects invalid index");
+    check(!operations.replace(session, 99, "x", 1), "replace rejects invalid index");
+    check(!operations.rename(session, 0, nullptr), "rename rejects null name");
+    check(!operations.add(session, "EMPTY", nullptr, 0), "add rejects empty payload");
+    check(!operations.replace(session, 0, nullptr, 0), "replace rejects empty payload");
+    check(!operations.replace(session, 0, "x", 0), "replace rejects zero-sized payload");
+    check(!session.isDirty(), "rejected operations do not dirty the session");
+}
+
+void testArchiveEntryReaderBoundaries()
+{
+    const auto bytes = makeSingleEntryWad();
+    slade_mobile::ArchiveSession session;
+    slade_mobile::ArchiveEntryReader reader;
+
+    check(!reader.data(session, 0, nullptr), "reader rejects closed session");
+
+    check(session.open(bytes.data(), static_cast<uint32_t>(bytes.size())),
+          "session opens for reader boundary test");
+
+    uint32_t size = 123;
+    check(reader.data(session, 99, &size) == nullptr, "reader rejects invalid index");
+    check(size == 123, "reader leaves size unchanged on invalid index");
+    check(reader.data(session, 0, nullptr) == nullptr, "reader rejects null output size");
+    check(reader.findPalette(session, nullptr) == nullptr, "palette reader rejects null output size");
+}
+
+void testArchivePreviewBoundaries()
+{
+    const uint8_t malformedPatch[] = {2, 0, 2, 0, 0, 0, 0, 0};
+    std::vector<uint8_t> palette(256 * 3, 0);
+    int width = -1;
+    int height = -1;
+
+    const auto pixels = slade_mobile::decodeDoomGraphic(
+            malformedPatch, static_cast<uint32_t>(sizeof(malformedPatch)), palette.data(), &width, &height);
+    check(width == 2 && height == 2, "malformed patch still reports decoded dimensions");
+    check(pixels.size() == 4, "malformed patch keeps bounded pixel output");
+    check(pixels[0] == 0 && pixels[3] == 0, "malformed patch does not invent pixel data");
+
+    const uint8_t shortWav[] = {'R', 'I', 'F', 'F'};
+    const std::string info = slade_mobile::audioInfoFor(
+            "WAV Sound", shortWav, static_cast<uint32_t>(sizeof(shortWav)));
+    check(info.find("Заголовок обрезан.") != std::string::npos,
+          "WAV preview reports truncated header");
+
+    check(slade_mobile::audioInfoFor("Unknown", shortWav, sizeof(shortWav)).empty(),
+          "preview dispatch returns empty string for unknown type");
+}
+
 void testArchiveEntryReader()
 {
     const auto bytes = makeSingleEntryWad();
@@ -369,8 +436,11 @@ int main()
     testArchiveSerializer();
     testSaveCoordinator();
     testArchiveOperations();
+    testArchiveOperationBoundaries();
     testArchiveEntryReader();
+    testArchiveEntryReaderBoundaries();
     testArchivePreview();
+    testArchivePreviewBoundaries();
 
     std::cout << "native_wad_tests: PASS\n";
     return 0;
