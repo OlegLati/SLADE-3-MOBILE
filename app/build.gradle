@@ -38,6 +38,25 @@ android {
         }
     }
 
+    // Debug builds include the native regression runner. Release builds keep
+    // the test executables and runner code disabled by CMake's default OFF.
+    buildTypes {
+        debug {
+            externalNativeBuild {
+                cmake {
+                    arguments "-DBUILD_NATIVE_TESTS=ON"
+                }
+            }
+        }
+        release {
+            externalNativeBuild {
+                cmake {
+                    arguments "-DBUILD_NATIVE_TESTS=OFF"
+                }
+            }
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
