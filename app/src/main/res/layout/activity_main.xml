@@ -28,6 +28,17 @@
          android:id="@+id/btnRunNativeTests"
          android:text="Run native tests" />
 
+    <!-- Debug native regression runner. -->
+    <Button
+         android:layout_height="wrap_content"
+         android:layout_width="wrap_content"
+         app:layout_constraintTop_toBottomOf="@id/btnOpenWad"
+         app:layout_constraintStart_toStartOf="parent"
+         app:layout_constraintEnd_toEndOf="parent"
+         android:layout_marginTop="8dp"
+         android:id="@+id/btnRunNativeTests"
+         android:text="Run native tests" />
+
     <!-- Phase 7: Save As. Writes the edited session to a new file the
          user picks via SAF; disabled while there's nothing open or
          nothing to save (see MainActivity.setBusy()). -->
