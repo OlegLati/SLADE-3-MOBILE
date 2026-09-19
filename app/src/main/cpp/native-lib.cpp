@@ -15,11 +15,7 @@
 
 #include "Archive/Formats/WadArchive.h"
 #include "Utility/MemChunk.h"
-#include "ArchiveSession.h"
-#include "ArchiveSerializer.h"
-#include "SaveCoordinator.h"
-#include "ArchiveOperations.h"
-#include "ArchiveEntryReader.h"
+#include "NativeArchiveApi.h"
 #include "FileDescriptorIO.h"
 using namespace slade;
 
@@ -67,7 +63,7 @@ std::string androidDetectEntryType(std::string_view upperName, uint32_t size, co
 // -----------------------------------------------------------------------
 namespace
 {
-slade_mobile::ArchiveSession g_session;
+slade_mobile::NativeArchiveApi g_archiveApi;
 }
 
 // Phase 7/8 shared helper: primes every entry's data (see the long-
@@ -90,10 +86,6 @@ slade_mobile::ArchiveSession g_session;
 // global::error (checked by the caller).
 namespace
 {
-slade_mobile::ArchiveSerializer g_serializer;
-slade_mobile::SaveCoordinator g_saveCoordinator;
-slade_mobile::ArchiveOperations g_archiveOperations;
-slade_mobile::ArchiveEntryReader g_entryReader;
 }
 
 
@@ -222,7 +214,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_stringFromJNI(
 // index/entry-count of an already-open session -- rename/delete need the
 // Kotlin-side adapter to reload from scratch rather than patch its cached
 // list locally, since removeEntry() shifts every later index down by one).
-// Assumes g_session is already open; callers are responsible for that.
+// Assumes g_archiveApi.session() is already open; callers are responsible for that.
 #include "ArchiveEntryList.h"
 
 extern "C" JNIEXPORT jobjectArray JNICALL
@@ -243,13 +235,13 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_openWadFileFd(
     }
 
     // Drop whatever archive was open before (if any) -- single-session
-    // app, opening a new WAD replaces the old one entirely. g_session.open()
+    // app, opening a new WAD replaces the old one entirely. g_archiveApi.open()
     // performs that lifecycle transition only after the new bytes are
     // available, so a failed mapping leaves the previous archive intact.
-    const bool ok = g_session.open(
+    const bool ok = g_archiveApi.open(
         reinterpret_cast<const unsigned char*>(mapped.data),
         static_cast<uint32_t>(mapped.size));
-    mapped.reset(); // g_session has its own copy now
+    mapped.reset(); // g_archiveApi.session() has its own copy now
 
     if (!ok)
     {
@@ -259,7 +251,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_openWadFileFd(
         return result;
     }
 
-    return slade_mobile::buildEntryListArray(env, g_session);
+    return slade_mobile::buildEntryListArray(env, g_archiveApi.session());
 }
 
 // -----------------------------------------------------------------------
@@ -286,7 +278,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryText(
 
     uint32_t        size = 0;
     ArchiveEntry*    entry = nullptr;
-    const uint8_t*   ptr  = g_entryReader.data(g_session, index, &size, &entry);
+    const uint8_t*   ptr  = g_archiveApi.entryReader().data(g_archiveApi.session(), index, &size, &entry);
     if (!ptr)
         return nullptr;
 
@@ -319,7 +311,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryPalette(
 
     uint32_t       size  = 0;
     ArchiveEntry*  entry = nullptr;
-    const uint8_t* ptr   = g_entryReader.data(g_session, index, &size, &entry);
+    const uint8_t* ptr   = g_archiveApi.entryReader().data(g_archiveApi.session(), index, &size, &entry);
     if (!ptr)
         return nullptr;
 
@@ -369,7 +361,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryImage(
 
     uint32_t       size  = 0;
     ArchiveEntry*  entry = nullptr;
-    const uint8_t* ptr   = g_entryReader.data(g_session, index, &size, &entry);
+    const uint8_t* ptr   = g_archiveApi.entryReader().data(g_archiveApi.session(), index, &size, &entry);
     if (!ptr)
         return nullptr;
 
@@ -378,7 +370,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryImage(
         return nullptr;
 
     uint32_t       palSize = 0;
-    const uint8_t* pal     = g_entryReader.findPalette(g_session, &palSize);
+    const uint8_t* pal     = g_archiveApi.entryReader().findPalette(g_archiveApi.session(), &palSize);
     if (!pal)
         return nullptr; // no PLAYPAL (or equivalent) anywhere in this archive
 
@@ -418,7 +410,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryPng(
 
     uint32_t       size  = 0;
     ArchiveEntry*  entry = nullptr;
-    const uint8_t* ptr   = g_entryReader.data(g_session, index, &size, &entry);
+    const uint8_t* ptr   = g_archiveApi.entryReader().data(g_archiveApi.session(), index, &size, &entry);
     if (!ptr)
         return nullptr;
 
@@ -449,7 +441,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryAudioInfo(
 
     uint32_t       size  = 0;
     ArchiveEntry*  entry = nullptr;
-    const uint8_t* ptr   = g_entryReader.data(g_session, index, &size, &entry);
+    const uint8_t* ptr   = g_archiveApi.entryReader().data(g_archiveApi.session(), index, &size, &entry);
     if (!ptr)
         return nullptr;
 
@@ -490,8 +482,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeRenameEntry(
     if (!nameChars)
         return JNI_FALSE;
 
-    const bool ok = g_archiveOperations.rename(
-            g_session, static_cast<unsigned>(index), nameChars);
+    const bool ok = g_archiveApi.rename(static_cast<unsigned>(index), nameChars);
     env->ReleaseStringUTFChars(newName, nameChars);
     return ok ? JNI_TRUE : JNI_FALSE;
 }
@@ -505,8 +496,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeDeleteEntry(
     if (index < 0)
         return JNI_FALSE;
 
-    return g_archiveOperations.remove(
-                   g_session, static_cast<unsigned>(index))
+    return g_archiveApi.remove(static_cast<unsigned>(index))
             ? JNI_TRUE
             : JNI_FALSE;
 }
@@ -521,10 +511,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeMoveEntry(
     if (index < 0 || newPosition < 0)
         return JNI_FALSE;
 
-    return g_archiveOperations.move(
-                   g_session,
-                   static_cast<unsigned>(index),
-                   static_cast<unsigned>(newPosition))
+    return g_archiveApi.move(static_cast<unsigned>(index), static_cast<unsigned>(newPosition))
             ? JNI_TRUE
             : JNI_FALSE;
 }
@@ -540,9 +527,9 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeListEntries(
         JNIEnv* env,
         jobject /* this */) {
 
-    if (!g_session.isOpen())
+    if (!g_archiveApi.session().isOpen())
         return env->NewObjectArray(0, env->FindClass("java/lang/String"), nullptr);
-    return slade_mobile::buildEntryListArray(env, g_session);
+    return slade_mobile::buildEntryListArray(env, g_archiveApi.session());
 }
 
 // Whether the session has unsaved changes (Phase 6/9 dirty-state
@@ -556,7 +543,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeIsDirty(
         JNIEnv* env,
         jobject /* this */) {
 
-    return g_session.isDirty() ? JNI_TRUE : JNI_FALSE;
+    return g_archiveApi.isDirty() ? JNI_TRUE : JNI_FALSE;
 }
 
 // Save As: serializes the current session to a MemChunk via WadArchive::
@@ -571,224 +558,47 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeIsDirty(
 // leaves the "*" up rather than silently discarding the fact that the
 // save didn't actually happen.
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_oleglati_slade_13_1mobile_SladeNative_nativeSaveToFd(
-        JNIEnv* env,
-        jobject /* this */,
-        jint fdRaw) {
-
-    const int fd = static_cast<int>(fdRaw);
-
-    if (!g_session.isOpen())
-    {
-        close(fd);
-        return JNI_FALSE;
-    }
-
-    // allowIwadOverwrite=true: see serializeSession()'s comment -- Save As
-    // always writes to a brand-new file (MainActivity's saveAsLauncher
-    // uses a separate SAF picker from the one the original was opened
-    // through), so iwad_lock's protection against clobbering a real IWAD
-    // in place doesn't apply to this code path.
-    MemChunk out;
-    if (!g_serializer.serialize(g_session, out, /*allowIwadOverwrite=*/true))
-    {
-        close(fd);
-        return JNI_FALSE;
-    }
-
-    if (!slade_mobile::writeAllAndClose(fd, out.data(), out.size()))
-        return JNI_FALSE;
-
-    g_session.clearDirty();
-    return JNI_TRUE;
+Java_com_oleglati_slade_13_1mobile_SladeNative_nativeSaveToFd(JNIEnv*, jobject, jint fdRaw) {
+    return g_archiveApi.saveToFd(static_cast<int>(fdRaw)) ? JNI_TRUE : JNI_FALSE;
 }
 
-// Phase 8 (Safe Save), step 1 of 2 -- see ArchiveSession::hasPendingSave()'s
-// comment for the full reasoning on why this is split from step 2
-// (nativeCommitSave) into two separate JNI calls instead of one function
-// like nativeSaveToFd above. In short: Kotlin must not open the ORIGINAL
-// document for writing until this step has already validated the new
-// content, because opening a document in "rwt" mode truncates it
-// immediately -- before either side has written a single byte -- so any
-// validation done *after* that point would be validating over an already-
-// destroyed original.
-//
-// Does the same serialize-and-prime work as nativeSaveToFd, but with
-// allowIwadOverwrite=false (this WILL eventually overwrite the file the
-// archive was opened from, unlike Save As -- exactly the case iwad_lock
-// exists for), then re-parses the serialized bytes as a fresh WadArchive
-// and sanity-checks entry count matches -- turning ROADMAP.md's "Reopen
-// validation (пока только вручную)" into something automatic, at least
-// for this one structural check.
-//
-// Returns null on success (with the validated bytes stashed in
-// g_session's pendingSave for nativeCommitSave to pick up), or a non-null
-// error string on failure -- distinct from the plain-boolean convention
-// elsewhere, since "IWAD saving disabled" vs. "validation failed" vs. "no
-// archive open" are meaningfully different things to tell the user here.
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_oleglati_slade_13_1mobile_SladeNative_nativeValidateForSave(
-        JNIEnv* env,
-        jobject /* this */) {
-
-    const char* error = g_saveCoordinator.validateForSave(g_session);
+Java_com_oleglati_slade_13_1mobile_SladeNative_nativeValidateForSave(JNIEnv* env, jobject) {
+    const char* error = g_archiveApi.validateForSave();
     return error ? env->NewStringUTF(error) : nullptr;
 }
 
-// Phase 8 (Safe Save), step 2 of 2 -- writes the bytes nativeValidateForSave
-// already validated and stashed to `fd`. `fd` is expected to come from
-// re-opening the ORIGINAL document (the one the archive was opened from)
-// in "rwt" mode -- Kotlin's job is to have only done that AFTER step 1
-// returned success, per this function's own file comment above. Closes
-// fd itself, on both the success and failure path, same contract as
-// nativeSaveToFd. Clears pendingSave either way (a half-written or
-// failed attempt shouldn't be retried blind with stale bytes -- if it
-// needs retrying, step 1 should run again first).
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_oleglati_slade_13_1mobile_SladeNative_nativeCommitSave(
-        JNIEnv* env,
-        jobject /* this */,
-        jint fdRaw) {
-
-    const int fd = static_cast<int>(fdRaw);
-
-    if (!g_session.isOpen() || !g_session.hasPendingSave())
-    {
-        close(fd);
-        g_session.clearPendingSave();
-        return JNI_FALSE;
-    }
-
-    MemChunk* out = g_session.pendingSave();
-    if (!slade_mobile::writeAllAndClose(fd, out->data(), out->size()))
-    {
-        g_session.clearPendingSave();
-        return JNI_FALSE;
-    }
-
-    g_session.clearPendingSave();
-    g_session.clearDirty();
-    return JNI_TRUE;
+Java_com_oleglati_slade_13_1mobile_SladeNative_nativeCommitSave(JNIEnv*, jobject, jint fdRaw) {
+    return g_archiveApi.commitSave(static_cast<int>(fdRaw)) ? JNI_TRUE : JNI_FALSE;
 }
 
-// Phase 8: Discard Changes. Thin wrapper -- see ArchiveSession::
-// discardChanges()'s comment for why this is safe/cheap (mc_ is never
-// mutated by any edit operation, so "undo everything" is just reparsing
-// it fresh). Returns false if nothing is open; Kotlin doesn't need to
-// distinguish that from "discard itself failed" since both mean nothing
-// changed, and the button that triggers this is disabled when
-// !archiveOpen anyway.
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_oleglati_slade_13_1mobile_SladeNative_nativeDiscardChanges(
-        JNIEnv* env,
-        jobject /* this */) {
-
-    return g_session.discardChanges() ? JNI_TRUE : JNI_FALSE;
+Java_com_oleglati_slade_13_1mobile_SladeNative_nativeDiscardChanges(JNIEnv*, jobject) {
+    return g_archiveApi.discardChanges() ? JNI_TRUE : JNI_FALSE;
 }
 
-// -----------------------------------------------------------------------
-// Export / Add / Replace (ROADMAP.md's remaining Phase 7 items).
-// -----------------------------------------------------------------------
-
-// Reads the whole contents of `fd` into memory via mmap, then closes fd.
-// Returns nullptr (with *outSize == 0) on any failure. Caller owns the
-// mapping and must munmap() it at *outSize bytes once done -- same
-// fstat-then-mmap pattern openWadFileFd() already uses for the original
-// WAD, reused here since Add/Replace both just need a picked file's whole
-// contents once, to hand to ArchiveEntry::importMem() (which immediately
-// copies them into its own storage -- the mapping's job ends there).
-// Exports the entry at `index`'s current bytes to `fd` (a SAF
-// ACTION_CREATE_DOCUMENT result, same "rwt"/detachFd() contract as
-// saveToFd()). Uses g_entryReader.data(g_session, ) -- NOT a raw offset lookup -- so
-// exporting a just-Replaced-but-not-yet-saved entry exports its NEW
-// content, not what used to be on disk.
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_oleglati_slade_13_1mobile_SladeNative_nativeExportEntry(
-        JNIEnv* env,
-        jobject /* this */,
-        jint index,
-        jint fdRaw) {
-
-    const int fd = static_cast<int>(fdRaw);
-
-    uint32_t       size = 0;
-    const uint8_t* data = g_entryReader.data(g_session, index, &size);
-    if (!data)
-    {
-        close(fd);
-        return JNI_FALSE;
-    }
-
-    return slade_mobile::writeAllAndClose(fd, data, size) ? JNI_TRUE : JNI_FALSE;
+Java_com_oleglati_slade_13_1mobile_SladeNative_nativeExportEntry(JNIEnv*, jobject, jint index, jint fdRaw) {
+    if (index < 0) { close(static_cast<int>(fdRaw)); return JNI_FALSE; }
+    return g_archiveApi.exportEntry(static_cast<unsigned>(index), static_cast<int>(fdRaw)) ? JNI_TRUE : JNI_FALSE;
 }
 
-// Adds a brand-new entry named `name` at the end of the archive, with
-// content read whole from `fd` (a SAF ACTION_OPEN_DOCUMENT result, "r"
-// mode -- read-only, same detachFd() contract as the read path in
-// openWadFileFd()). WadArchive::addEntry() sanitizes `name` itself (wad-
-// friendly: 8 chars max, no extension) per its own doc comment, so
-// whatever the picked file's display name was is passed through as-is;
-// no need to duplicate that sanitization on the Kotlin side.
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_oleglati_slade_13_1mobile_SladeNative_nativeAddEntry(
-        JNIEnv* env,
-        jobject /* this */,
-        jstring name,
-        jint fdRaw) {
-
+Java_com_oleglati_slade_13_1mobile_SladeNative_nativeAddEntry(JNIEnv* env, jobject, jstring name, jint fdRaw) {
     const int fd = static_cast<int>(fdRaw);
-
-    if (!g_session.isOpen() || !name)
-    {
-        close(fd);
-        return JNI_FALSE;
-    }
-
-    slade_mobile::MappedFile mapped;
-    if (!slade_mobile::mapReadOnlyFd(fd, mapped))
-        return JNI_FALSE;
-
+    if (!name) { close(fd); return JNI_FALSE; }
     const char* nameChars = env->GetStringUTFChars(name, nullptr);
-    if (!nameChars)
-    {
-        mapped.reset();
-        return JNI_FALSE;
-    }
-
-    const bool ok = g_archiveOperations.add(
-            g_session, nameChars, mapped.data, static_cast<uint32_t>(mapped.size));
+    if (!nameChars) { close(fd); return JNI_FALSE; }
+    const bool ok = g_archiveApi.addEntry(nameChars, fd);
     env->ReleaseStringUTFChars(name, nameChars);
-    mapped.reset();
     return ok ? JNI_TRUE : JNI_FALSE;
 }
 
-// Replaces the entry at index using the selected file's whole contents.
-// mmap/SAF fd ownership remains in JNI; the archive-domain mutation itself
-// is delegated to ArchiveOperations.
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_oleglati_slade_13_1mobile_SladeNative_nativeReplaceEntry(
-        JNIEnv* env,
-        jobject /* this */,
-        jint index,
-        jint fdRaw) {
-
+Java_com_oleglati_slade_13_1mobile_SladeNative_nativeReplaceEntry(JNIEnv*, jobject, jint index, jint fdRaw) {
     const int fd = static_cast<int>(fdRaw);
-
-    if (!g_session.isOpen() || index < 0)
-    {
-        close(fd);
-        return JNI_FALSE;
-    }
-
-    slade_mobile::MappedFile mapped;
-    if (!slade_mobile::mapReadOnlyFd(fd, mapped))
-        return JNI_FALSE;
-
-    const bool ok = g_archiveOperations.replace(
-            g_session,
-            static_cast<unsigned>(index),
-            mapped.data,
-            static_cast<uint32_t>(mapped.size));
-    mapped.reset();
-    return ok ? JNI_TRUE : JNI_FALSE;
+    if (index < 0) { close(fd); return JNI_FALSE; }
+    return g_archiveApi.replaceEntry(static_cast<unsigned>(index), fd) ? JNI_TRUE : JNI_FALSE;
 }
+
