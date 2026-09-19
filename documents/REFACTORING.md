@@ -76,7 +76,7 @@ SLADE Core
 | `ArchiveSession` WAD-specific | форматно-независимая сессия при появлении потребителя |
 | Save pipeline в native/JNI коде | отдельный SaveService / save boundary |
 | Undo/Redo отсутствует | command history |
-| native tests отсутствуют как завершённый набор | автоматизированные native/regression tests |
+| автоматизированный native test runner удалён | воспроизводимый набор ручных WAD regression fixtures |
 
 ## 5. Правила
 
@@ -172,9 +172,13 @@ serialize → validate → open rwt → commit
 
 Ввести command/history model для Rename, Replace, Add, Delete и Move после стабилизации ownership состояния `ArchiveSession`.
 
-## 14. R8 — native tests и CI
+## 14. R8 — ручная WAD-регрессия
 
-Расширить существующий native regression slice fixture-файлами для нормального, пустого, большого, повреждённого и обрезанного WAD; затем подключить воспроизводимый CI-запуск native target. На текущем этапе тесты остаются in-memory и запускаются через отдельный `native_wad_tests` target.
+Автоматизированный native test target и отдельный runner больше не используются. Вместо этого regression coverage строится вокруг небольших WAD-fixture файлов и реальных WAD, которые проверяются вручную через Android UI.
+
+Набор должен включать корректные пустые/минимальные WAD, несколько вариантов каталога и данных, граничные имена, malformed/truncated WAD и реальные архивы с картами, ресурсами и аудио. Ожидаемые результаты для каждого fixture фиксируются в `documents/WAD_TESTING.md`.
+
+Автоматизацию native tests не планировать как часть текущего R8; к этому вопросу можно вернуться отдельно только при появлении стабильной и действительно полезной test infrastructure.
 
 ## 15. R9 — профилирование
 
