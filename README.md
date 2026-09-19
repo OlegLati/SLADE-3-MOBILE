@@ -66,7 +66,7 @@ SLADE 3 MOBILE существует, чтобы исследовать возм�
 - разделение UI Android, состояния приложения, repository/domain-логики и нативных операций;
 - дальнейшее отделение JNI от нативной предметной логики;
 - развитие типизированных Kotlin/native контрактов;
-- подготовка нативных автоматизированных тестов;
+- ручная regression-проверка на фиксированном наборе WAD fixtures;
 - подготовка фундамента Undo/Redo.
 
 ### Запланировано
@@ -168,7 +168,8 @@ SLADE_3_MOBILE/
 │   ├── ROADMAP.md
 │   ├── TECHNICAL.md
 │   ├── THIRD_PARTY_NOTICES.md
-│   └── REFACTORING.md
+│   ├── REFACTORING.md
+│   └── WAD_TESTING.md
 ├── README.md
 ├── README_ENG.md
 ├── SECURITY.md
@@ -250,6 +251,7 @@ git switch -c refactor/architecture
 - [`ROADMAP.md`](documents/ROADMAP.md) — дорожная карта разработки и вехи;
 - [`TECHNICAL.md`](documents/TECHNICAL.md) — технический стек и детали реализации;
 - [`REFACTORING.md`](documents/REFACTORING.md) — стратегия структурного рефакторинга;
+- [`WAD_TESTING.md`](documents/WAD_TESTING.md) — ручная WAD-регрессия и fixture workflow;
 - [`THIRD_PARTY_NOTICES.md`](documents/THIRD_PARTY_NOTICES.md) — перечень стороннего ПО и лицензий.
 
 ## Лицензирование
