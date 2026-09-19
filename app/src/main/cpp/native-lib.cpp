@@ -18,6 +18,8 @@
 #include "NativeArchiveApi.h"
 #include "FileDescriptorIO.h"
 #include "Archive/ArchiveEntry.h"
+#include "ArchivePreview.h"
+#include "JniUtils.h"
 
 namespace slade
 {
@@ -51,70 +53,7 @@ namespace
 slade_mobile::NativeArchiveApi g_archiveApi;
 }
 
-// Phase 7/8 shared helper: primes every entry's data (see the long-
-// standing "IMPORTANT" file-header comment and nativeSaveToFd's own
-// comment for why rawData()/loadEntryData() can't be trusted here) and
-// serializes the current session via WadArchive::write(). Shared by Save
-// As (nativeSaveToFd) and Safe Save's validation step
-// (nativeValidateForSave) -- the two differ only in whether iwad_lock
-// should apply for this particular write, hence the bool parameter
-// rather than each duplicating the priming loop with its own iwad_lock
-// handling bolted on.
-//
-// allowIwadOverwrite=true (Save As): never writes to the file the
-// archive was opened from, so iwad_lock's protection doesn't apply here
-// and is toggled off for the call, same as before this was factored out.
-// allowIwadOverwrite=false (Safe Save / in-place): DOES eventually
-// overwrite the original file the archive came from, which is exactly
-// the scenario iwad_lock exists to guard against -- left untouched, so
-// write() can refuse a real IWAD on its own and report why via
-// slade::slade::global::error (checked by the caller).
-namespace
-{
-}
 
-
-// Text lumps are, per slade::androidDetectEntryType()'s own check, printable
-// ASCII for at least the first 512 bytes -- but a longer lump isn't
-// guaranteed ASCII-only past that prefix, and NewStringUTF() expects
-// valid modified UTF-8. Rather than risk a JNI-level crash we can't debug
-// without Logcat, replace anything outside safe printable ASCII with '.'
-// and stop at the first embedded NUL (NewStringUTF would silently
-// truncate there anyway, since it reads a C string).
-std::string sanitizeAscii(const uint8_t* data, uint32_t len)
-{
-    std::string out;
-    out.reserve(len);
-    for (uint32_t i = 0; i < len; ++i)
-    {
-        const uint8_t c = data[i];
-        if (c == 0)
-            break;
-        if (c == '\t' || c == '\n' || c == '\r' || (c >= 0x20 && c < 0x7F))
-            out.push_back(static_cast<char>(c));
-        else
-            out.push_back('.');
-    }
-    return out;
-}
-
-// -----------------------------------------------------------------------
-// Packs [width, height, pixel0, pixel1, ...] into a jintArray -- the same
-// convention getEntryPalette() already uses, so the Kotlin side can share
-// one unpacking code path for palettes, flats, and graphics alike.
-jintArray packImage(JNIEnv* env, int width, int height, const std::vector<jint>& pixels)
-{
-    jintArray result = env->NewIntArray(2 + static_cast<jsize>(pixels.size()));
-    if (!result)
-        return nullptr;
-
-    const jint header[2] = { width, height };
-    env->SetIntArrayRegion(result, 0, 2, header);
-    env->SetIntArrayRegion(result, 2, static_cast<jsize>(pixels.size()), pixels.data());
-    return result;
-}
-
-#include "ArchivePreview.h"
 
 // NOTE: method names below (MemChunk::importMem, WadArchive::open(MemChunk&),
 // Archive::numEntries) are best guesses based on the SLADE conventions we've
@@ -197,7 +136,6 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_stringFromJNI(
 // Kotlin-side adapter to reload from scratch rather than patch its cached
 // list locally, since removeEntry() shifts every later index down by one).
 // Assumes g_archiveApi.session() is already open; callers are responsible for that.
-#include "ArchiveEntryList.h"
 
 extern "C" JNIEXPORT jobjectArray JNICALL
 Java_com_oleglati_slade_13_1mobile_SladeNative_openWadFileFd(
@@ -237,14 +175,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_openWadFileFd(
 }
 
 // -----------------------------------------------------------------------
-// getEntryText / getEntryPalette -- content viewers for the first two
-// entry types (see HANDOFF discussion). Both look the entry up again by
-// index in the persistent g_wad/g_mc pair rather than trusting anything
-// cached on the Kotlin side, and both independently re-run
-// slade::androidDetectEntryType() rather than trusting the type string Kotlin
-// already has -- cheap, and it means these functions are self-contained
-// and can't be tricked into misreading an entry as the wrong type by a
-// stale adapter list.
+// Content preview JNI adapters.
 // -----------------------------------------------------------------------
 
 // Returns the entry's bytes as a sanitized-ASCII jstring, or null if the
@@ -297,7 +228,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryPalette(
     if (!ptr)
         return nullptr;
 
-    if (slade::androidDetectEntryType(entry->upperName(), size, ptr) != "Palette")
+    if (g_archiveApi.entryType(index) != "Palette")
         return nullptr;
 
     const uint32_t numColors = size / 3;
@@ -317,14 +248,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryPalette(
                                        | (static_cast<uint32_t>(g) << 8) | static_cast<uint32_t>(b));
     }
 
-    jintArray result = env->NewIntArray(2 + static_cast<jsize>(pixels.size()));
-    if (!result)
-        return nullptr;
-
-    const jint header[2] = { kCols, rows };
-    env->SetIntArrayRegion(result, 0, 2, header);
-    env->SetIntArrayRegion(result, 2, static_cast<jsize>(pixels.size()), pixels.data());
-    return result;
+    return slade_mobile::packImage(env, kCols, rows, pixels);
 }
 
 // Returns a packed jintArray in the same [width, height, pixels...]
@@ -362,7 +286,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryImage(
         // 4160 bytes -- both comfortably cover the 64x64 = 4096 pixels
         // slade_mobile::decodeFlat() reads, so no further size check needed here.
         std::vector<jint> pixels = slade_mobile::decodeFlat(ptr, size, pal);
-        return packImage(env, 64, 64, pixels);
+        return slade_mobile::packImage(env, 64, 64, pixels);
     }
 
     // Doom Graphic: slade::androidDetectEntryType() already sanity-checked that
@@ -372,7 +296,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryImage(
     // there's no need to re-validate here.
     int w = 0, h = 0;
     std::vector<jint> pixels = slade_mobile::decodeDoomGraphic(ptr, size, pal, &w, &h);
-    return packImage(env, w, h, pixels);
+    return slade_mobile::packImage(env, w, h, pixels);
 }
 
 // Returns the entry's raw bytes as-is, for entries classified "PNG
