@@ -14,6 +14,7 @@
 // self-contained. Skipping this is exactly what broke the previous attempt.
 #include "Main.h"
 
+#include "Archive/Formats/WadArchive.h"
 #include "NativeArchiveApi.h"
 
 // -----------------------------------------------------------------------
@@ -335,7 +336,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryImage(
 
     uint32_t       size  = 0;
     ArchiveEntry*  entry = nullptr;
-    const uint8_t* ptr   = g_archiveApi.entryReader().data(g_archiveApi.session(), index, &size, &entry);
+    const uint8_t* ptr   = g_archiveApi.entryData(index, &size, &entry);
     if (!ptr)
         return nullptr;
 
