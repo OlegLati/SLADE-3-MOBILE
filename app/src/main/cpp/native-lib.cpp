@@ -20,6 +20,7 @@
 #include "Archive/ArchiveEntry.h"
 #include "ArchivePreview.h"
 #include "JniUtils.h"
+#include "ArchiveEntryList.h"
 
 namespace slade
 {
@@ -55,24 +56,6 @@ slade_mobile::NativeArchiveApi g_archiveApi;
 
 
 
-// NOTE: method names below (MemChunk::importMem, WadArchive::open(MemChunk&),
-// Archive::numEntries) are best guesses based on the SLADE conventions we've
-// seen so far in Archive.cpp/WadArchive.cpp/MemChunk.cpp -- not confirmed
-// against the actual header. If this doesn't compile, send the error same
-// as always and we'll fix the exact names.
-// Phase 5 (background processing): these were originally
-// Java_..._MainActivity_* -- the `external fun` declarations lived
-// directly on MainActivity. They were moved to a dedicated `SladeNative`
-// Kotlin object (SladeNative.kt) so every native call is forced through
-// one suspend-function wrapper on a single dedicated background thread,
-// keeping native calls off the UI thread while still serializing them
-// (native side keeps non-thread-safe global archive state, see the
-// "Persistent archive holder" comment below). JNI resolves native methods
-// by fully-qualified class name, so the exported symbols had to be
-// renamed to match the object they now actually live on -- `jobject thiz`
-// is unused in all of these (just `this`/the singleton instance), so the
-// rename is the only change needed here; none of the logic below cares
-// which Kotlin class owns the native method.
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_oleglati_slade_13_1mobile_SladeNative_stringFromJNI(
         JNIEnv* env,
