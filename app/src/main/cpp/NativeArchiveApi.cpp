@@ -42,7 +42,7 @@ bool NativeArchiveApi::saveToFd(int fd)
         return false;
     }
 
-    MemChunk out;
+    slade::MemChunk out;
     if (!serializer_.serialize(session_, out, true))
     {
         close(fd);
@@ -70,7 +70,7 @@ bool NativeArchiveApi::commitSave(int fd)
         return false;
     }
 
-    MemChunk* out = session_.pendingSave();
+    slade::MemChunk* out = session_.pendingSave();
     if (!writeAllAndClose(fd, out->data(), out->size()))
     {
         session_.clearPendingSave();
