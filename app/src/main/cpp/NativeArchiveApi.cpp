@@ -6,6 +6,11 @@
 #include "FileDescriptorIO.h"
 #include "Utility/MemChunk.h"
 
+namespace slade
+{
+std::string androidDetectEntryType(std::string_view upperName, uint32_t size, const uint8_t* data);
+}
+
 namespace slade_mobile
 {
 
@@ -134,6 +139,28 @@ bool NativeArchiveApi::replaceEntry(unsigned index, int fd)
         session_, index, mapped.data, static_cast<uint32_t>(mapped.size));
     mapped.reset();
     return ok;
+}
+
+const uint8_t* NativeArchiveApi::entryData(unsigned index, uint32_t* outSize,
+                                            slade::ArchiveEntry** outEntry)
+{
+    return entryReader_.data(session_, index, outSize, outEntry);
+}
+
+std::string NativeArchiveApi::entryType(unsigned index)
+{
+    uint32_t size = 0;
+    slade::ArchiveEntry* entry = nullptr;
+    const uint8_t* data = entryData(index, &size, &entry);
+    if (!data || !entry)
+        return {};
+
+    return slade::androidDetectEntryType(entry->upperName(), size, data);
+}
+
+const uint8_t* NativeArchiveApi::paletteData(uint32_t* outSize)
+{
+    return entryReader_.findPalette(session_, outSize);
 }
 
 ArchiveSession& NativeArchiveApi::session()
