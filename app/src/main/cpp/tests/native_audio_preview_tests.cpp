@@ -91,7 +91,8 @@ std::vector<uint8_t> makeMidi()
     data[0] = 'M'; data[1] = 'T'; data[2] = 'h'; data[3] = 'd';
     putBE16(data, 8, 1);
     putBE16(data, 10, 2);
-    putBE16(data, 12, 96);\n    return data;
+    putBE16(data, 12, 96);
+    return data;
 }
 
 std::vector<uint8_t> makeMus()
