@@ -90,6 +90,13 @@ if(BUILD_NATIVE_TESTS)
     target_link_libraries(native_wad_tests
             slade_core
             log)
+
+    add_executable(native_audio_preview_tests
+            tests/native_audio_preview_tests.cpp)
+
+    target_link_libraries(native_audio_preview_tests
+            slade_core
+            log)
 endif()
 
 # NEXT FILES TO ADD, roughly in order of usefulness/difficulty:
