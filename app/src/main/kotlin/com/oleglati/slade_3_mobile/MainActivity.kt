@@ -15,6 +15,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.activity.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.oleglati.slade_3_mobile.databinding.ActivityMainBinding
 import kotlinx.coroutines.Job
@@ -23,7 +24,7 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private val archiveRepository = ArchiveRepository()
+    private val archiveViewModel: ArchiveViewModel by viewModels()
     private val adapter = WadEntryAdapter(
         onEntryClick = ::onEntryClicked,
         onEntryLongClick = ::onEntryLongClicked
@@ -36,7 +37,7 @@ class MainActivity : AppCompatActivity() {
     // worth being able to save.
     private var archiveOpen = false
 
-    // Phase 8: mirrors archiveRepository.isDirty() so Save/Discard's enabled
+    // Phase 8: mirrors archiveViewModel.isDirty() so Save/Discard's enabled
     // state (see updateActionButtonsEnabled()) doesn't need its own
     // suspend round-trip on every button-state refresh -- refreshed
     // alongside the "*" indicator in refreshDirtyIndicator(), and reset
@@ -57,7 +58,7 @@ class MainActivity : AppCompatActivity() {
     // starting a new one means a stale result can't land after a newer
     // request -- e.g. tap entry A, immediately tap entry B: A's dialog
     // must not pop up after B's. This only pre-empts work that hasn't
-    // reached the native call yet (see archiveRepository.kt) -- once a native
+    // reached the native call yet (see archiveViewModel.kt) -- once a native
     // call has actually started on its dedicated thread, cancellation
     // can't interrupt it mid-flight, it just gets ignored on completion.
     private var wadLoadJob: Job? = null
@@ -128,7 +129,7 @@ class MainActivity : AppCompatActivity() {
             wadLoadJob?.cancel()
             wadLoadJob = lifecycleScope.launch {
                 setBusy(true, "Opening WAD…")
-                when (val result = archiveRepository.openWad(fd)) {
+                when (val result = archiveViewModel.openWad(fd)) {
                     is NativeResult.Success -> handleWadResult(fileSizeBytes, result.value)
                     is NativeResult.Failure -> {
                         archiveOpen = false
@@ -163,7 +164,7 @@ class MainActivity : AppCompatActivity() {
             wadLoadJob?.cancel()
             wadLoadJob = lifecycleScope.launch {
                 setBusy(true, "Saving…")
-                val saved = when (val result = archiveRepository.saveToFd(fd)) {
+                val saved = when (val result = archiveViewModel.saveToFd(fd)) {
                     is NativeResult.Success -> result.value
                     is NativeResult.Failure -> {
                         Toast.makeText(this@MainActivity, "Ошибка сохранения: ${result.message}", Toast.LENGTH_SHORT).show()
@@ -199,7 +200,7 @@ class MainActivity : AppCompatActivity() {
         wadLoadJob = lifecycleScope.launch {
             setBusy(true, "Проверка перед сохранением…")
 
-            val validationError = when (val result = archiveRepository.validateForSave()) {
+            val validationError = when (val result = archiveViewModel.validateForSave()) {
                 is NativeResult.Success -> result.value // null == validation passed
                 is NativeResult.Failure -> result.message
             }
@@ -223,7 +224,7 @@ class MainActivity : AppCompatActivity() {
             }
             val fd = pfd.detachFd()
 
-            val saved = when (val result = archiveRepository.commitSave(fd)) {
+            val saved = when (val result = archiveViewModel.commitSave(fd)) {
                 is NativeResult.Success -> result.value
                 is NativeResult.Failure -> {
                     Toast.makeText(this@MainActivity, "Ошибка сохранения: ${result.message}", Toast.LENGTH_SHORT).show()
@@ -264,7 +265,7 @@ class MainActivity : AppCompatActivity() {
             entryLoadJob?.cancel()
             entryLoadJob = lifecycleScope.launch {
                 setBusy(true)
-                val ok = when (val result = archiveRepository.exportEntry(entry.index, fd)) {
+                val ok = when (val result = archiveViewModel.exportEntry(entry.index, fd)) {
                     is NativeResult.Success -> result.value
                     is NativeResult.Failure -> {
                         Toast.makeText(this@MainActivity, "Ошибка: ${result.message}", Toast.LENGTH_SHORT).show()
@@ -304,7 +305,7 @@ class MainActivity : AppCompatActivity() {
             entryLoadJob?.cancel()
             entryLoadJob = lifecycleScope.launch {
                 setBusy(true)
-                val ok = when (val result = archiveRepository.replaceEntry(entry.index, fd)) {
+                val ok = when (val result = archiveViewModel.replaceEntry(entry.index, fd)) {
                     is NativeResult.Success -> result.value
                     is NativeResult.Failure -> {
                         Toast.makeText(this@MainActivity, "Ошибка: ${result.message}", Toast.LENGTH_SHORT).show()
@@ -369,7 +370,7 @@ class MainActivity : AppCompatActivity() {
                 entryLoadJob?.cancel()
                 entryLoadJob = lifecycleScope.launch {
                     setBusy(true)
-                    val ok = when (val result = archiveRepository.addEntry(name, fd)) {
+                    val ok = when (val result = archiveViewModel.addEntry(name, fd)) {
                         is NativeResult.Success -> result.value
                         is NativeResult.Failure -> {
                             Toast.makeText(this@MainActivity, "Ошибка: ${result.message}", Toast.LENGTH_SHORT).show()
@@ -438,7 +439,7 @@ class MainActivity : AppCompatActivity() {
         binding.entryList.adapter = adapter
 
         lifecycleScope.launch {
-            binding.statusText.text = when (val result = archiveRepository.greeting()) {
+            binding.statusText.text = when (val result = archiveViewModel.greeting()) {
                 is NativeResult.Success -> result.value
                 is NativeResult.Failure -> result.message
             }
@@ -481,7 +482,7 @@ class MainActivity : AppCompatActivity() {
 
         archiveOpen = true
         // A freshly-opened archive has no edits yet -- no need to round-trip
-        // through archiveRepository.isDirty() just to confirm what's already known.
+        // through archiveViewModel.isDirty() just to confirm what's already known.
         isDirty = false
         val entries = parseEntryLines(rawLines)
         binding.statusText.text = "File size: $fileSizeBytes bytes — ${entries.size} entries"
@@ -507,7 +508,7 @@ class MainActivity : AppCompatActivity() {
     // rename to the same name, for instance, is a no-op SLADE may not
     // consider a real change).
     private suspend fun refreshEntryList() {
-        when (val result = archiveRepository.listEntries()) {
+        when (val result = archiveViewModel.listEntries()) {
             is NativeResult.Success -> adapter.submitList(parseEntryLines(result.value))
             is NativeResult.Failure ->
                 Toast.makeText(this, "Ошибка обновления списка: ${result.message}", Toast.LENGTH_SHORT).show()
@@ -516,7 +517,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private suspend fun refreshDirtyIndicator() {
-        isDirty = (archiveRepository.isDirty() as? NativeResult.Success)?.value ?: false
+        isDirty = (archiveViewModel.isDirty() as? NativeResult.Success)?.value ?: false
         val base = binding.fileNameText.text.toString().removeSuffix(" *")
         binding.fileNameText.text = if (isDirty) "$base *" else base
         updateActionButtonsEnabled()
@@ -594,7 +595,7 @@ class MainActivity : AppCompatActivity() {
         entryLoadJob?.cancel()
         entryLoadJob = lifecycleScope.launch {
             setBusy(true)
-            val ok = when (val result = archiveRepository.moveEntry(entry.index, newPosition)) {
+            val ok = when (val result = archiveViewModel.moveEntry(entry.index, newPosition)) {
                 is NativeResult.Success -> result.value
                 is NativeResult.Failure -> {
                     Toast.makeText(this@MainActivity, "Ошибка: ${result.message}", Toast.LENGTH_SHORT).show()
@@ -622,7 +623,7 @@ class MainActivity : AppCompatActivity() {
                 entryLoadJob?.cancel()
                 entryLoadJob = lifecycleScope.launch {
                     setBusy(true)
-                    val ok = when (val result = archiveRepository.renameEntry(entry.index, newName)) {
+                    val ok = when (val result = archiveViewModel.renameEntry(entry.index, newName)) {
                         is NativeResult.Success -> result.value
                         is NativeResult.Failure -> {
                             Toast.makeText(this@MainActivity, "Ошибка: ${result.message}", Toast.LENGTH_SHORT).show()
@@ -646,7 +647,7 @@ class MainActivity : AppCompatActivity() {
                 entryLoadJob?.cancel()
                 entryLoadJob = lifecycleScope.launch {
                     setBusy(true)
-                    val ok = when (val result = archiveRepository.deleteEntry(entry.index)) {
+                    val ok = when (val result = archiveViewModel.deleteEntry(entry.index)) {
                         is NativeResult.Success -> result.value
                         is NativeResult.Failure -> {
                             Toast.makeText(this@MainActivity, "Ошибка: ${result.message}", Toast.LENGTH_SHORT).show()
@@ -676,7 +677,7 @@ class MainActivity : AppCompatActivity() {
                 entryLoadJob?.cancel()
                 entryLoadJob = lifecycleScope.launch {
                     setBusy(true)
-                    val ok = when (val result = archiveRepository.discardChanges()) {
+                    val ok = when (val result = archiveViewModel.discardChanges()) {
                         is NativeResult.Success -> result.value
                         is NativeResult.Failure -> {
                             Toast.makeText(this@MainActivity, "Ошибка: ${result.message}", Toast.LENGTH_SHORT).show()
@@ -752,7 +753,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private suspend fun showTextDialog(entry: WadEntry) {
-        val text = when (val data = archiveRepository.entryText(entry.index).toDialogData(entry)) {
+        val text = when (val data = archiveViewModel.entryText(entry.index).toDialogData(entry)) {
             is DialogData.Present -> data.value
             DialogData.Absent -> {
                 Toast.makeText(this, "Не удалось прочитать ${entry.name}", Toast.LENGTH_SHORT).show()
@@ -784,7 +785,7 @@ class MainActivity : AppCompatActivity() {
     // neighbor) afterward so individual color swatches stay crisp instead
     // of blurring into a gradient the way bilinear scaling would.
     private suspend fun showPaletteDialog(entry: WadEntry) {
-        val packed = when (val data = archiveRepository.entryPalette(entry.index).toDialogData(entry)) {
+        val packed = when (val data = archiveViewModel.entryPalette(entry.index).toDialogData(entry)) {
             is DialogData.Present -> data.value
             DialogData.Absent -> {
                 Toast.makeText(this, "Не удалось прочитать палитру ${entry.name}", Toast.LENGTH_SHORT).show()
@@ -838,7 +839,7 @@ class MainActivity : AppCompatActivity() {
     // the IWAD alongside it, if support for multiple loaded archives ever
     // gets added).
     private suspend fun showImageDialog(entry: WadEntry) {
-        val packed = when (val data = archiveRepository.entryImage(entry.index).toDialogData(entry)) {
+        val packed = when (val data = archiveViewModel.entryImage(entry.index).toDialogData(entry)) {
             is DialogData.Present -> data.value
             DialogData.Absent -> {
                 Toast.makeText(
@@ -897,7 +898,7 @@ class MainActivity : AppCompatActivity() {
     // for the manual RGBA-decode path Doom Graphic/Flat need above (those
     // aren't formats any Android API understands on its own).
     private suspend fun showPngDialog(entry: WadEntry) {
-        val bytes = when (val data = archiveRepository.entryPng(entry.index).toDialogData(entry)) {
+        val bytes = when (val data = archiveViewModel.entryPng(entry.index).toDialogData(entry)) {
             is DialogData.Present -> data.value
             DialogData.Absent -> {
                 Toast.makeText(
@@ -935,7 +936,7 @@ class MainActivity : AppCompatActivity() {
     // here is just "show it in a dialog" with nothing to lay out
     // differently per format.
     private suspend fun showAudioInfoDialog(entry: WadEntry) {
-        val info = when (val data = archiveRepository.entryAudioInfo(entry.index).toDialogData(entry)) {
+        val info = when (val data = archiveViewModel.entryAudioInfo(entry.index).toDialogData(entry)) {
             is DialogData.Present -> data.value
             DialogData.Absent -> {
                 Toast.makeText(this, "Не удалось прочитать метаданные ${entry.name}", Toast.LENGTH_SHORT).show()
@@ -960,6 +961,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     // No `external fun` declarations or System.loadLibrary() here anymore
-    // -- both moved to archiveRepository.kt, which is now the only class allowed
+    // -- both moved to archiveViewModel.kt, which is now the only class allowed
     // to touch the JNI boundary directly (see its file comment for why).
 }
