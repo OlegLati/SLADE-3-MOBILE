@@ -1,5 +1,6 @@
 package com.oleglati.slade_3_mobile
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.withContext
 import java.util.concurrent.Executors
@@ -25,6 +26,8 @@ private suspend fun <T> callNative(block: () -> T): NativeResult<T> =
     withContext(nativeDispatcher) {
         try {
             NativeResult.Success(block())
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Throwable) {
             NativeResult.Failure(e.message ?: e.javaClass.simpleName)
         }
