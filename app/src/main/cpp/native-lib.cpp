@@ -180,7 +180,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryText(
     constexpr uint32_t kMaxPreview = 262144; // 256 KB
     const uint32_t     previewLen  = size < kMaxPreview ? size : kMaxPreview;
 
-    std::string text = sanitizeAscii(ptr, previewLen);
+    std::string text = slade_mobile::sanitizeAscii(ptr, previewLen);
     if (previewLen < size)
         text += "\n\n[... truncated, entry is " + std::to_string(size) + " bytes ...]";
 
