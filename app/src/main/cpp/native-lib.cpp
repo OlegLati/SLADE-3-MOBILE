@@ -23,34 +23,10 @@ namespace slade
 std::string androidDetectEntryType(std::string_view upperName, uint32_t size, const uint8_t* data);
 }
 
-// -----------------------------------------------------------------------
-// ArchiveSession (Phase 6, ROADMAP.md): replaces the previous g_mc/g_wad
-// raw-pointer pair with one owning object. Doesn't change behavior on its
-// own -- same single-archive-at-a-time assumption as before, same "not
-// thread-safe, but only ever touched from one native-dispatcher thread at
-// a time" invariant (see SladeNative.kt's comment on why that's true) --
-// it just gives the app a real open/close lifecycle (open()/close()
-// instead of only ever implicitly replacing the previous archive when a
-// new one loads) and one place for Phase 7's future edit operations to
-// call markDirty() from, instead of another round of global-state
-// plumbing when that lands.
-//
-// IMPORTANT (unchanged from the old g_mc/g_wad contract): WadArchive::
-// open(MemChunk&) does NOT copy entry data into itself -- per HANDOFF
-// notes, loadEntryData() only works from a file on disk (filename_ never
-// set here), so entries are read by offset directly out of the session's
-// MemChunk for as long as the archive is open. That means the MemChunk
-// must outlive the WadArchive, and both must stay alive for the whole
-// "list then click an entry" lifetime, not just for one JNI call --
-// that's why they're owned together by one object with one lifetime,
-// rather than as two independently-managed globals.
-// -----------------------------------------------------------------------
 namespace
 {
 slade_mobile::NativeArchiveApi g_archiveApi;
 }
-
-
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_oleglati_slade_13_1mobile_SladeNative_stringFromJNI(
@@ -78,43 +54,8 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_stringFromJNI(
     return env->NewStringUTF(result.c_str());
 }
 
-// CHANGED (RecyclerView support): now returns a jobjectArray of jstring
-// instead of a single formatted jstring, so the Kotlin side can bind it to
-// a RecyclerView adapter instead of dumping everything into one TextView.
-//
-// CHANGED (real EntryType detection): each entry is now run through
-// slade::androidDetectEntryType() (compat/slade_shims.cpp) before being reported,
-// so the type name reflects real byte-signature/name-based detection
-// rather than always being "unknown". This is a standalone classifier, not
-// the real EntryType engine -- see the comment above androidDetectEntryType's
-// definition for why (it depends on slade.pk3's ZIP-based resource archive,
-// which isn't ported yet).
-//
-// CHANGED (memory safety, takes an fd instead of a byte[]): used to take a
-// jbyteArray that Kotlin filled via InputStream.readBytes() -- reading the
-// WHOLE file into a JVM-heap ByteArray, then GetByteArrayElements() below
-// potentially copying it AGAIN into native memory, before MemChunk::
-// importMem() made a third copy. Fine for a small IWAD, but Sigil/Sigil2's
-// soundtrack editions run 50-150MB, and tripling that was almost certainly
-// what was crashing the app. Now Kotlin hands us a raw file descriptor
-// (MainActivity.kt: ParcelFileDescriptor.detachFd()) and we mmap() it
-// directly -- MemChunk still makes its own one copy (it owns its buffer,
-// unchanged from before), but the JVM-heap and JNI-array copies are gone
-// entirely. fd ownership is ours from here on: we close() it ourselves
-// once mmap() has been called (the mapping stays valid independently of
-// the descriptor after that, per standard POSIX semantics).
-//
-// Format:
-//   - success: one array element per entry, each "name\tsize\ttype" (tab-
-//     separated, parsed on the Kotlin side).
-//   - failure: a single-element array whose entry starts with "ERROR: "
-//     followed by an error message.
-// Builds the "name\tsize\ttype" array shared by openWadFileFd() (after a
-// fresh open) and listEntries() (Phase 7, after an edit changes the
-// index/entry-count of an already-open session -- rename/delete need the
-// Kotlin-side adapter to reload from scratch rather than patch its cached
-// list locally, since removeEntry() shifts every later index down by one).
-// Assumes g_archiveApi.session() is already open; callers are responsible for that.
+// Opens an fd-backed WAD and returns the current entry list.
+// The fd is consumed by this JNI layer; the archive session owns its data after open().
 
 extern "C" JNIEXPORT jobjectArray JNICALL
 Java_com_oleglati_slade_13_1mobile_SladeNative_openWadFileFd(
@@ -153,15 +94,9 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_openWadFileFd(
     return slade_mobile::buildEntryListArray(env, g_archiveApi.session());
 }
 
-// -----------------------------------------------------------------------
-// Content preview JNI adapters.
-// -----------------------------------------------------------------------
+// Content preview JNI adapters. Keep format parsing/decoding in ArchivePreview;
+// this layer only validates JNI arguments and marshals results.
 
-// Returns the entry's bytes as a sanitized-ASCII jstring, or null if the
-// archive isn't open, the index is invalid, or the entry isn't classified
-// as "Text". Capped at 256 KB so a large ACS-source or SNDINFO lump
-// doesn't hand a multi-megabyte string across the JNI boundary just for a
-// preview dialog.
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryText(
         JNIEnv* env,
@@ -169,8 +104,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryText(
         jint index) {
 
     uint32_t        size = 0;
-    slade::ArchiveEntry*    entry = nullptr;
-    const uint8_t*   ptr  = g_archiveApi.entryData(index, &size, &entry);
+    const uint8_t* ptr = g_archiveApi.entryData(index, &size, nullptr);
     if (!ptr)
         return nullptr;
 
@@ -202,8 +136,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryPalette(
         jint index) {
 
     uint32_t       size  = 0;
-    slade::ArchiveEntry*  entry = nullptr;
-    const uint8_t* ptr   = g_archiveApi.entryData(index, &size, &entry);
+    const uint8_t* ptr = g_archiveApi.entryData(index, &size, nullptr);
     if (!ptr)
         return nullptr;
 
@@ -338,18 +271,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_getEntryAudioInfo(
     return env->NewStringUTF(info.c_str());
 }
 
-// -----------------------------------------------------------------------
-// Phase 7 (ROADMAP.md) -- WAD Editor MVP: first real edit operations.
-// Scope for this pass: rename, delete, and Save As. Not yet done (left
-// for a later pass, see comments at each function): Export/Import/
-// Replace/Add/Move entry, and Phase 8's full "write to temp file, verify,
-// then replace" safe-save flow -- Save As here writes straight to
-// wherever the user points the SAF picker, which is still safe in the
-// sense the ROADMAP cares about (the *original* WAD is never touched
-// during editing -- Kotlin opens it read-only and this session never
-// holds a writable fd to it) but doesn't yet cover overwriting the same
-// file in place with a verify-before-replace step.
-// -----------------------------------------------------------------------
+// Archive edit JNI adapters. Business logic lives in NativeArchiveApi.
 
 // Archive edit operations are implemented by ArchiveOperations; the JNI layer
 // only converts Android/Kotlin arguments and return values.
