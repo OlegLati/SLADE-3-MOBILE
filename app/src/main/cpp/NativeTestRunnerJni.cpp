@@ -17,7 +17,7 @@ void appendResult(std::ostringstream& out, const char* name, int result)
 }
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_oleglati_slade_13_1mobile_SladeNative_runNativeTests(
+Java_com_oleglati_slade_13_1mobile_SladeNative_runNativeTestsNative(
         JNIEnv* env,
         jobject /* this */)
 {
