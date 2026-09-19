@@ -147,7 +147,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_stringFromJNI(
     out << "SLADE core on Android\n";
     out << "WadArchive::open() -> " << (ok ? "OK" : "FAILED") << "\n";
     if (ok)
-        out << "Entries: " << api.session().archive()->numEntries();
+        out << "Entries: " << api.entryCount();
 
     std::string result = out.str();
     return env->NewStringUTF(result.c_str());
@@ -502,7 +502,7 @@ Java_com_oleglati_slade_13_1mobile_SladeNative_nativeListEntries(
         JNIEnv* env,
         jobject /* this */) {
 
-    if (!g_archiveApi.session().isOpen())
+    if (!g_archiveApi.isOpen())
         return env->NewObjectArray(0, env->FindClass("java/lang/String"), nullptr);
     return slade_mobile::buildEntryListArray(env, g_archiveApi.session());
 }
