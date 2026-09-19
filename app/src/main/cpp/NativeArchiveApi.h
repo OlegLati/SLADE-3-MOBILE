@@ -20,6 +20,8 @@ public:
     bool remove(unsigned index);
     bool move(unsigned index, unsigned newPosition);
 
+    bool isOpen() const;
+    unsigned entryCount() const;
     bool isDirty() const;
 
     bool saveToFd(int fd);
