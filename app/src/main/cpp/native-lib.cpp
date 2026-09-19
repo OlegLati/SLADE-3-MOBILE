@@ -14,6 +14,7 @@
 #include "NativeArchiveApi.h"
 #include "FileDescriptorIO.h"
 #include "ArchivePreview.h"
+#include "ArchiveAudioPreview.h"
 #include "JniUtils.h"
 #include "ArchiveEntryList.h"
 
