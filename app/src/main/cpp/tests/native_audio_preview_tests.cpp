@@ -270,7 +270,7 @@ void testGenMidiZeroSize()
 }
 }
 
-int main()
+int runNativeAudioPreviewTests()
 {
     testWav();
     testDmx();
@@ -283,7 +283,12 @@ int main()
     testOgg();
     testTruncatedInputs();
     testGenMidiZeroSize();
-
-    std::cout << "native_audio_preview_tests: PASS\n";
     return 0;
+}
+
+int main()
+{
+    const int result = runNativeAudioPreviewTests();
+    std::cout << "native_audio_preview_tests: " << (result == 0 ? "PASS" : "FAIL") << "\n";
+    return result;
 }
